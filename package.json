@@ -1,0 +1,26 @@
+{
+  "name": "hyperdb",
+  "version": "0.0.0",
+  "description": "P2P first db",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard"
+  },
+  "dependencies": {
+    "b4a": "^1.6.6",
+    "streamx": "^2.20.0"
+  },
+  "devDependencies": {
+    "standard": "^17.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/holepunchto/hyperdb.git"
+  },
+  "author": "Holepunch Inc",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/holepunchto/hyperdb/issues"
+  },
+  "homepage": "https://github.com/holepunchto/hyperdb"
+}
