@@ -1,5 +1,4 @@
 const IndexStream = require('./lib/stream')
-const c = require('compact-encoding')
 const b4a = require('b4a')
 
 // engines
