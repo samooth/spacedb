@@ -1,5 +1,4 @@
 const HyperDB = require('./builder')
-const SubEncoder = require('sub-encoder')
 const b4a = require('b4a')
 
 module.exports = function createKeetDatabase (opts) {
