@@ -10,77 +10,91 @@ class HyperDB {
     this.engine = engine
     this.definition = definition
     this.updates = new Map()
+    this.clocked = 0
   }
 
   static rocksdb (storage, definition) {
     return new HyperDB(new RocksEngine(storage), definition)
   }
 
-  _getIndex (name) {
-    let i = 0
-    for (const idx of this.definition.indexes) {
-      if (idx.name === name) return [i, idx, this.definition]
-      i++
-    }
+  query (indexName, q = {}, options) {
+    if (options) q = { ...q, ...options }
 
-    throw new Error('Unknown index')
-  }
+    const index = this.definition.resolveIndex(indexName)
+    const collection = index === null ? this.definition.resolveCollection(indexName) : index.collection
+    const limit = q.limit
+    const reverse = !!q.reverse
 
-  query (indexName, q = {}) {
-    const [i, index, def] = this._getIndex(indexName)
-    const range = index.encodeRange(q)
-
+    const range = index === null ? collection.encodeKeyRange(q) : index.encodeKeyRange(q)
     const engine = this.engine
     const overlay = []
 
-    for (const u of this.updates.values()) {
-      for (const { key, del } of u.indexes[i]) {
-        if (withinRange(range, key)) overlay.push({ key, value: del ? null : u.value })
+    if (index === null) {
+      for (const u of this.updates.values()) {
+        if (withinRange(range, u.key)) overlay.push({ key: u.key, value: u.value })
+      }
+    } else {
+      for (const u of this.updates.values()) {
+        for (const { key, del } of u.indexes[index.offset]) {
+          if (withinRange(range, key)) overlay.push({ key, value: del ? null : u.value })
+        }
       }
     }
 
-    overlay.sort(q.reverse ? reverseSortOverlay : sortOverlay)
+    overlay.sort(reverse ? reverseSortOverlay : sortOverlay)
 
-    // quick hack before backing engine is there
-    const stream = engine.createReadStream(range, {})
+    const stream = engine.createReadStream(range, { reverse, limit })
 
-    return new IndexStream(stream, { decode, overlay, map })
-
-    function decode (entry) {
-      return c.decode(def.valueEncoding, entry.value)
-    }
+    return new IndexStream(stream, { reverse, limit, restructure: collection.restructure, overlay, map: index === null ? null : map })
 
     function map (entries) {
       return engine.getRange(entries)
     }
   }
 
-  async queryOne (indexName, q = {}) {
-    const stream = this.query(indexName, { ...q, limit: 1 })
+  async queryOne (indexName, q, options) {
+    const stream = this.query(indexName, q, { ...options, limit: 1 })
 
     let result = null
     for await (const data of stream) result = data
     return result
   }
 
-  async insert (collectionName, doc) {
-    // TODO proper one for a collection etc
-    const docDefinition = this.definition
-    const key = c.encode(docDefinition.keyEncoding, doc)
+  async get (collectionName, doc) {
+    const collection = this.definition.resolveCollection(collectionName)
+    if (collection === null) return null
 
-    const prevBuffer = await this.engine.get(key)
-    const prev = prevBuffer === null ? null : c.decode(docDefinition.valueEncoding, prevBuffer)
+    const key = collection.encodeKey(doc)
+    const value = await this._getLatestValue(key)
+    return value === null ? null : collection.restructure(key, value)
+  }
+
+  _getLatestValue (key) {
+    const hex = b4a.toString(key, 'hex')
+    const u = this.updates.get(hex)
+    if (u) return u.value
+    return this.engine.get(key)
+  }
+
+  async insert (collectionName, doc) {
+    const collection = this.definition.resolveCollection(collectionName)
+    if (collection === null) throw new Error('Unknown collection')
+
+    const key = collection.encodeKey(doc)
+
+    const prevValue = await this.engine.get(key)
+    const prevDoc = prevValue === null ? null : collection.restructure(key, prevValue)
 
     const u = {
       key,
-      value: c.encode(docDefinition.valueEncoding, doc),
+      value: collection.encodeValue(doc),
       indexes: []
     }
 
-    for (let i = 0; i < docDefinition.indexes.length; i++) {
-      const d = docDefinition.indexes[i]
-      const prevKey = prev && d.encode(prev)
-      const nextKey = d.encode(doc)
+    for (let i = 0; i < collection.indexes.length; i++) {
+      const idx = collection.indexes[i]
+      const prevKey = prevDoc && idx.encodeKey(prevDoc)
+      const nextKey = idx.encodeKey(doc)
 
       if (prevKey !== null && b4a.equals(nextKey, prevKey)) continue
 
@@ -95,16 +109,17 @@ class HyperDB {
   }
 
   async flush () {
+    if (this.clocked !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
     await this.engine.commit(this.updates)
-    this.updates.clear()
+    this.clocked = this.engine.clock
   }
 }
 
 function withinRange (range, key) {
-  if (range.gte !== null && b4a.compare(range.gte, key) > 0) return false
-  if (range.gt !== null && b4a.compare(range.gt, key) >= 0) return false
-  if (range.lte !== null && b4a.compare(range.lte, key) < 0) return false
-  if (range.lt !== null && b4a.compare(range.lt, key) <= 0) return false
+  if (range.gte && b4a.compare(range.gte, key) > 0) return false
+  if (range.gt && b4a.compare(range.gt, key) >= 0) return false
+  if (range.lte && b4a.compare(range.lte, key) < 0) return false
+  if (range.lt && b4a.compare(range.lt, key) <= 0) return false
   return true
 }
 
