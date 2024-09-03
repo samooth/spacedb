@@ -112,6 +112,10 @@ class HyperDB {
     await this.engine.commit(this.updates)
     this.clocked = this.engine.clock
   }
+
+  async close () {
+    await this.engine.close()
+  }
 }
 
 function withinRange (range, key) {
