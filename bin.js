@@ -2,7 +2,7 @@
 const p = require('path')
 const fs = require('fs')
 
-const HyperDB = require('./builder')
+const Builder = require('./builder')
 
 const args = process.argv.slice(2)
 const input = args[0]
@@ -34,7 +34,7 @@ let previousJson = null
 let previous = null
 if (exists) {
   previousJson = require(outputJsonPath)
-  previous = HyperDB.Builder.fromJSON(previousJson)
+  previous = Builder.fromJSON(previousJson)
 }
 
 const next = require(inputSchemaPath)({ previous })
