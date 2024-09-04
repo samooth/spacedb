@@ -1,7 +1,7 @@
-const HyperDB = require('./builder')
+const Builder = require('./builder')
 
 module.exports = function createKeetDatabase (opts) {
-  const spec = new HyperDB.Builder({ ...opts, offset: 2 })
+  const spec = new Builder({ ...opts, offset: 2 })
 
   // Will internally create enums for collections/indexes
   // These two namespaces are legacy prefixed
