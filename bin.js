@@ -15,7 +15,7 @@ if (!input || !output) {
 const inputSchemaPath = p.resolve(input)
 const outputDirPath = p.resolve(output)
 
-const outputDBPath = p.join(outputDirPath, 'db.js')
+const outputDBPath = p.join(outputDirPath, 'index.js')
 const outputJsonPath = p.join(outputDirPath, 'schema.json')
 const outputCencPath = p.join(outputDirPath, 'messages.js')
 
