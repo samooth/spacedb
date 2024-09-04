@@ -237,7 +237,7 @@ class Builder {
       this.version -= 1
     }
     return {
-      messages: this.schema.toCode(),
+      messages: this.schema.toCode({ runtime: 'hyperdb/runtime' }),
       db: generateCode(this),
       changed: this.changed,
       json: this.toJSON()
