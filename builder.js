@@ -75,12 +75,14 @@ class Collection extends DBType {
     const primaryKeySet = new Set(this.key)
     this.builder.schema.register({
       ...this.schema.toJSON(),
+      flagsPosition: -1,
       namespace: this.namespace,
       name: this.description.name + '/value',
       fields: this.schema.fields.filter(f => !primaryKeySet.has(f.name)).map(f => f.toJSON())
     })
     this.builder.schema.register({
       ...this.schema.toJSON(),
+      flagsPosition: -1,
       namespace: this.namespace,
       name: this.description.name + '/key',
       fields: this.schema.fields.filter(f => primaryKeySet.has(f.name)).map(f => f.toJSON())
