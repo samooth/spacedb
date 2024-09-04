@@ -1,5 +1,4 @@
 const HyperDB = require('./builder')
-const b4a = require('b4a')
 
 module.exports = function createKeetDatabase (opts) {
   const spec = new HyperDB.Builder({ ...opts, offset: 2 })
@@ -26,7 +25,7 @@ module.exports = function createKeetDatabase (opts) {
         name: 'seq',
         type: 'uint',
         required: true
-      }  
+      }
     ]
   })
 
@@ -53,7 +52,7 @@ module.exports = function createKeetDatabase (opts) {
   keet.schema.register({
     name: 'chat-message',
     fields: [
-      { 
+      {
         name: 'thread',
         type: 'uint',
         required: true
@@ -61,18 +60,18 @@ module.exports = function createKeetDatabase (opts) {
       {
         name: 'seq',
         type: 'uint',
-        required: true    
+        required: true
       },
       {
         name: 'messageId',
         type: '@keet/oplog-message-id',
-        required: true 
+        required: true
       },
       {
         name: 'text',
-        type: 'string'  
+        type: 'string'
       }
-    ]  
+    ]
   })
 
   keet.collections.register({
@@ -85,7 +84,7 @@ module.exports = function createKeetDatabase (opts) {
     name: 'chat-by-message-id',
     collection: '@keet/chat',
     key: ['messageId.key', 'messageId.seq'],
-    unique: true 
+    unique: true
   })
 
   keet.collections.register({

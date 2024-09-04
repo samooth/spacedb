@@ -23,7 +23,7 @@ class DBType {
     this.version = 1
     this.previous = null
     if (this.builder.previous) {
-      this.previous = this.builder.previous.typesById.get(this.id)    
+      this.previous = this.builder.previous.typesById.get(this.id)
     }
   }
 
@@ -32,7 +32,7 @@ class DBType {
 
     let current = schema
     for (let i = 0; i < components.length; i++) {
-      const field = current.fieldsByName.get(components[i]) 
+      const field = current.fieldsByName.get(components[i])
       if (!field) throw new Error('Could not resolve path: ' + path)
       current = field.type
     }
@@ -43,14 +43,13 @@ class DBType {
     return resolved
   }
 
-
   toJSON () {
     return {
       name: this.description.name,
       unsafe: this.description.unsafe,
       namespace: this.namespace,
-      id: this.id,
-    }  
+      id: this.id
+    }
   }
 }
 
@@ -64,27 +63,27 @@ class Collection extends DBType {
     if (!this.schema) throw new Error('Schema not found: ' + description.schema)
 
     this.key = description.key
-    this.keyEncoding = [] 
+    this.keyEncoding = []
     this.valueEncoding = this.fqn + '/value'
     for (const component of this.key) {
       const field = this.schema.fieldsByName.get(component)
       const resolvedType = this.builder.schema.resolve(field.type.fqn, { aliases: false })
-      this.keyEncoding.push(resolvedType.name)  
+      this.keyEncoding.push(resolvedType.name)
     }
 
     // Register a value encoding type (the portion of the record that will not be in the primary key)
     const primaryKeySet = new Set(this.key)
     this.builder.schema.register({
       ...this.schema.toJSON(),
-      namespace: this.namespace, 
+      namespace: this.namespace,
       name: this.description.name + '/value',
-      fields: this.schema.fields.filter(f => !primaryKeySet.has(f.name)).map(f => f.toJSON()) 
+      fields: this.schema.fields.filter(f => !primaryKeySet.has(f.name)).map(f => f.toJSON())
     })
     this.builder.schema.register({
       ...this.schema.toJSON(),
-      namespace: this.namespace, 
+      namespace: this.namespace,
       name: this.description.name + '/key',
-      fields: this.schema.fields.filter(f => primaryKeySet.has(f.name)).map(f => f.toJSON()) 
+      fields: this.schema.fields.filter(f => primaryKeySet.has(f.name)).map(f => f.toJSON())
     })
   }
 
@@ -108,18 +107,18 @@ class Index extends DBType {
     this.collection = this.builder.typesByName.get(description.collection)
 
     if (!this.collection || !this.collection.isCollection) {
-      throw new Error('Invalid index target: ' + description.collection) 
-    } 
+      throw new Error('Invalid index target: ' + description.collection)
+    }
     this.collection.indexes.push(this)
 
     this.keyEncoding = []
-    this.valueEncoding = this.collection.fqn + '/key' 
+    this.valueEncoding = this.collection.fqn + '/key'
 
     // Key encoding will be an IndexEncoder of the secondary index's key fields
     // If the key is not unique, then the primary key should also be included
     for (const component of this.key) {
       const resolvedType = this._resolveKey(this.collection.schema, component)
-      this.keyEncoding.push(resolvedType.name)  
+      this.keyEncoding.push(resolvedType.name)
     }
     if (!this.unique) {
       for (const component of this.collection.keyEncoding) {
@@ -127,7 +126,7 @@ class Index extends DBType {
       }
     }
 
-    // Value encoding will be the collection's primary key value encoding if unique 
+    // Value encoding will be the collection's primary key value encoding if unique
     // If non-unique, the value encoding will be empty
     this.valueEncoding = this.unique ? this.collection.fqn + '/key' : null
   }
@@ -146,8 +145,8 @@ class Index extends DBType {
 class BuilderCollections {
   constructor (namespace) {
     this.builder = namespace.builder
-    this.namespace = namespace  
-  }  
+    this.namespace = namespace
+  }
 
   register (description) {
     this.builder.registerCollection(description, this.namespace.name)
@@ -157,8 +156,8 @@ class BuilderCollections {
 class BuilderIndexes {
   constructor (namespace) {
     this.builder = namespace.builder
-    this.namespace = namespace  
-  }  
+    this.namespace = namespace
+  }
 
   register (description) {
     this.builder.registerIndex(description, this.namespace.name)
@@ -176,7 +175,7 @@ class BuilderNamespace {
     this.schema = this.builder.schema.namespace(this.name)
 
     this.descriptions = []
-  }  
+  }
 
   toJSON () {
     return {
@@ -195,13 +194,13 @@ class Builder {
     this.offset = offset
 
     this.previous = previous
-    this.version = previous ? previous.version + 1 : version 
+    this.version = previous ? previous.version + 1 : version
 
     this.schema = new Hyperschema()
     this.pathsByName = new Map()
     this.pathMap = new Map()
     this.currentOffset = this.offset
-  }    
+  }
 
   _assignId (type) {
     const unsafe = type.description.unsafe
@@ -216,7 +215,7 @@ class Builder {
 
   registerCollection (description, namespace) {
     const collection = new Collection(this, namespace, description)
-    this.orderedTypes.push(collection)  
+    this.orderedTypes.push(collection)
     this.typesByName.set(collection.fqn, collection)
   }
 
@@ -228,7 +227,7 @@ class Builder {
 
   namespace (name, opts) {
     if (this.namespaces.has(name)) throw new Error('Namespace already exists: ' + name)
-    const ns = new BuilderNamespace(this, name, opts)  
+    const ns = new BuilderNamespace(this, name, opts)
     this.namespaces.set(name, ns)
     return ns
   }
@@ -241,8 +240,8 @@ class Builder {
       messages: this.schema.toCode(),
       db: generateCode(this),
       changed: this.changed,
-      json: this.toJSON(),
-    }  
+      json: this.toJSON()
+    }
   }
 
   toJSON () {
@@ -252,22 +251,22 @@ class Builder {
       types: this.schema.toJSON(),
       db: {
         namespaces: [...this.namespaces.values()].map(ns => ns.toJSON()),
-        schema: [...this.typesById.values()].map(type => type.toJSON()) 
+        schema: [...this.typesById.values()].map(type => type.toJSON())
       }
-    }  
+    }
   }
 
   static fromJSON (json, opts) {
     const builder = new this({ ...opts, version: json.version, unsafe: json.unsafe })
     for (const type of json.types.schema) {
-      builder.schema.register(type)  
+      builder.schema.register(type)
     }
     for (const description of json.db.namespaces) {
       builder.namespace(description.name, description)
     }
     for (const typeDescription of json.db.schema) {
       if (typeDescription.type === INDEX_TYPE) {
-        builder.registerIndex(typeDescription, typeDescription.namespace)  
+        builder.registerIndex(typeDescription, typeDescription.namespace)
       } else if (typeDescription.type === COLLECTION_TYPE) {
         builder.registerCollection(typeDescription, typeDescription.namespace)
       } else {
@@ -278,30 +277,7 @@ class Builder {
   }
 }
 
-module.exports = class Hyperindex {
-  static Builder = Builder
-
-  constructor (engine, contract) {
-    this.engine = engine
-    this.contract = contract
-    this.fullyQualifiedTypes = new Map()
-    this.schema = new Hyperschema(description.schema)
-  }
-
-  toJSON () {
-    return {
-      schema: this.schema.toJSON(),
-      db: null 
-    }  
-  }
-
-  toCode () {
-    return { 
-      schema: this.schema.toCode(),
-      db: this.toCode()
-    }
-  }
-}
+module.exports = Builder
 
 function getFQN (namespace, name) {
   return '@' + namespace + '/' + name
