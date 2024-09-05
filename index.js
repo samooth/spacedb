@@ -107,11 +107,11 @@ class HyperDB {
       const idx = collection.indexes[i]
       const prevKey = prevDoc && idx.encodeKey(prevDoc)
       const nextKey = idx.encodeKey(doc)
+      const ups = []
+
+      u.indexes.push(ups)
 
       if (prevKey !== null && b4a.equals(nextKey, prevKey)) continue
-
-      const ups = []
-      u.indexes.push(ups)
 
       if (prevKey !== null) ups.push({ key: prevKey, del: true })
       if (nextKey !== null) ups.push({ key: nextKey, del: false })
