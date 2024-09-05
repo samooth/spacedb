@@ -4,7 +4,7 @@
 /* eslint-disable quotes */
 
 const VERSION = 1
-const { c } = require('hyperdb/runtime')
+const { c } = require('../../../runtime')
 
 // eslint-disable-next-line no-unused-vars
 let version = VERSION
