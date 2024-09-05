@@ -132,8 +132,8 @@ function generateCommonPrefix (id, type) {
   str += `function ${id}_indexify (record) {\n`
   str += '  const arr = []\n'
   str += '\n'
-  for (let i = 0; i < type.keyEncoding.length; i++) {
-    const key = type.keyEncoding[i]
+  for (let i = 0; i < type.fullKey.length; i++) {
+    const key = type.fullKey[i]
     const r = (a, b, i) => (i === 0) ? gen(a, b) : gen.optional(a, b)
     str += `  const a${i} = ${key.split('.').reduce(r, 'record')}\n`
     str += `  if (a${i} === undefined) return arr\n`
@@ -213,7 +213,7 @@ function generateEncodeCollectionValue (collection) {
 }
 
 function generateEncodeIndexKey (id, index) {
-  const accessors = index.keyEncoding.map(c => {
+  const accessors = index.fullKey.map(c => {
     return c.split('.').reduce(gen, 'record')
   })
   let str = ''
@@ -226,10 +226,10 @@ function generateEncodeIndexKey (id, index) {
 
 function generateIndexKeyEncoding (type) {
   let str = 'new IndexEncoder([\n'
-  for (let i = 0; i < type.keyEncoding.length; i++) {
+  for (let i = 0; i < type.fullKey.length; i++) {
     const component = type.keyEncoding[i]
     str += '  ' + IndexTypeMap.get(component)
-    if (i !== type.keyEncoding.length - 1) str += ',\n'
+    if (i !== type.fullKey.length - 1) str += ',\n'
     else str += '\n'
   }
   str += `], { prefix: ${type.id} })`

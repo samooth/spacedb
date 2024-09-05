@@ -12,6 +12,7 @@ class DBType {
     this.description = description
     this.fqn = getFQN(this.namespace, this.description.name)
     this.key = description.key
+    this.fullKey = []
 
     this.isIndex = false
     this.isCollection = false
@@ -63,6 +64,8 @@ class Collection extends DBType {
     if (!this.schema) throw new Error('Schema not found: ' + description.schema)
 
     this.key = description.key
+    this.fullKey = this.key
+
     this.keyEncoding = []
     this.valueEncoding = this.fqn + '/value'
     for (const component of this.key) {
@@ -97,10 +100,12 @@ class Index extends DBType {
   constructor (builder, namespace, description) {
     super(builder, namespace, description)
     this.isIndex = true
-    this.key = description.key
     this.unique = !!description.unique
     this.collection = this.builder.typesByName.get(description.collection)
     this.keyEncoding = []
+
+    this.key = description.key
+    this.fullKey = [...this.key]
 
     if (!this.collection || !this.collection.isCollection) {
       throw new Error('Invalid index target: ' + description.collection)
@@ -114,8 +119,9 @@ class Index extends DBType {
       this.keyEncoding.push(resolvedType.name)
     }
     if (!this.unique) {
-      for (const component of this.collection.keyEncoding) {
-        this.keyEncoding.push(component)
+      for (let i = 0; i < this.collection.keyEncoding.length; i++) {
+        this.keyEncoding.push(this.collection.keyEncoding[i])
+        this.fullKey.push(this.collection.key[i])
       }
     }
   }
