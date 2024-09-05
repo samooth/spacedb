@@ -7,7 +7,8 @@ const Builder = require('./')
 const args = process.argv.slice(2)
 const input = args[0]
 const output = args[1]
-const testing = args[2] === '--test-fixture'
+const testing = args.includes('--test-fixture')
+const force = args.includes('--force')
 if (!input || !output) {
   console.error('Usage: hyperdb [input.js] [outputDir]')
   process.exit(1)
@@ -47,7 +48,7 @@ if (testing) {
 const next = require(inputSchemaPath)({ previous })
 const { json, messages, db } = runtime ? next.compile({ runtime }) : next.compile()
 
-if (previous && (json.version === previousJson.version)) {
+if (!force && (previous && (json.version === previousJson.version))) {
   console.log('Schema has not been changed.')
   process.exit(0)
 }
