@@ -17,6 +17,10 @@ class HyperDB {
     return new HyperDB(new RocksEngine(storage), definition)
   }
 
+  get updated () {
+    return this.updates.size > 0
+  }
+
   query (indexName, q = {}, options) {
     if (options) q = { ...q, ...options }
 
@@ -86,13 +90,16 @@ class HyperDB {
     if (collection === null) throw new Error('Unknown collection')
 
     const key = collection.encodeKey(doc)
+    const value = collection.encodeValue(this.version, doc)
 
     const prevValue = await this.engine.get(key)
+    if (prevValue !== null && b4a.equals(value, prevValue)) return
+
     const prevDoc = prevValue === null ? null : collection.restructure(this.version, key, prevValue)
 
     const u = {
       key,
-      value: collection.encodeValue(this.version, doc),
+      value,
       indexes: []
     }
 
