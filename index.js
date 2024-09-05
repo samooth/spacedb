@@ -5,7 +5,8 @@ const b4a = require('b4a')
 const RocksEngine = require('./lib/engine/rocks')
 
 class HyperDB {
-  constructor (engine, definition) {
+  constructor (engine, definition, { version = definition.version } = {}) {
+    this.version = version
     this.engine = engine
     this.definition = definition
     this.updates = new Map()
@@ -23,6 +24,7 @@ class HyperDB {
     const collection = index === null ? this.definition.resolveCollection(indexName) : index.collection
     const limit = q.limit
     const reverse = !!q.reverse
+    const version = q.version === 0 ? 0 : (q.version || this.version)
 
     const range = index === null ? collection.encodeKeyRange(q) : index.encodeKeyRange(q)
     const engine = this.engine
@@ -44,7 +46,11 @@ class HyperDB {
 
     const stream = engine.createReadStream(range, { reverse, limit })
 
-    return new IndexStream(stream, { reverse, limit, restructure: collection.restructure, overlay, map: index === null ? null : map })
+    return new IndexStream(stream, { decode, reverse, limit, restructure: collection.restructure, overlay, map: index === null ? null : map })
+
+    function decode (key, value) {
+      return collection.restructure(version, key, value)
+    }
 
     function map (entries) {
       return engine.getRange(entries)
@@ -65,7 +71,7 @@ class HyperDB {
 
     const key = collection.encodeKey(doc)
     const value = await this._getLatestValue(key)
-    return value === null ? null : collection.restructure(key, value)
+    return value === null ? null : collection.restructure(this.version, key, value)
   }
 
   _getLatestValue (key) {
@@ -82,11 +88,11 @@ class HyperDB {
     const key = collection.encodeKey(doc)
 
     const prevValue = await this.engine.get(key)
-    const prevDoc = prevValue === null ? null : collection.restructure(key, prevValue)
+    const prevDoc = prevValue === null ? null : collection.restructure(this.version, key, prevValue)
 
     const u = {
       key,
-      value: collection.encodeValue(doc),
+      value: collection.encodeValue(this.version, doc),
       indexes: []
     }
 

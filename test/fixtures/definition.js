@@ -28,10 +28,10 @@ const membersCollection = {
   encodeKeyRange (range) {
     return memberKey.encodeRange({}) // fix later
   },
-  encodeValue (doc) {
+  encodeValue (version, doc) {
     return c.encode(struct, doc)
   },
-  restructure (keyBuffer, valueBuffer) {
+  restructure (version, keyBuffer, valueBuffer) {
     return c.decode(struct, valueBuffer)
   },
   indexes: []
