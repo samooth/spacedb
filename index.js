@@ -85,6 +85,36 @@ class HyperDB {
     return this.engine.get(key)
   }
 
+  async delete (collectionName, doc) {
+    const collection = this.definition.resolveCollection(collectionName)
+    if (collection === null) return
+
+    const key = collection.encodeKey(doc)
+
+    const prevValue = await this.engine.get(key)
+    if (prevValue === null) return
+
+    const prevDoc = collection.restructure(this.version, key, prevValue)
+
+    const u = {
+      key,
+      value: null,
+      indexes: []
+    }
+
+    for (let i = 0; i < collection.indexes.length; i++) {
+      const idx = collection.indexes[i]
+      const prevKey = idx.encodeKey(prevDoc)
+      const ups = []
+
+      u.indexes.push(ups)
+
+      if (prevKey !== null) ups.push({ key: prevKey, del: true })
+    }
+
+    this.updates.set(b4a.toString(u.key, 'hex'), u)
+  }
+
   async insert (collectionName, doc) {
     const collection = this.definition.resolveCollection(collectionName)
     if (collection === null) throw new Error('Unknown collection')

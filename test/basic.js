@@ -54,3 +54,48 @@ test('basic full example on rocks', async function (t) {
 
   await db.close()
 })
+
+test('delete record', async function (t) {
+  const db = HyperDB.rocksdb(await tmp(t), definition)
+
+  await db.insert('members', { id: 'maf', age: 34 })
+  await db.insert('members', { id: 'andrew', age: 34 })
+  await db.flush()
+
+  await db.delete('members', { id: 'maf' })
+
+  {
+    const result = await collect(db.query('members'))
+    t.alike(result, [
+      { id: 'andrew', age: 34 }
+    ])
+  }
+
+  {
+    const result = await collect(db.query('members/by-age', { gte: { age: 33 }, lt: { age: 99 } }))
+    t.alike(result, [
+      { id: 'andrew', age: 34 }
+    ])
+  }
+
+  await db.flush()
+
+  {
+    const result = await collect(db.query('members'))
+    t.alike(result, [
+      { id: 'andrew', age: 34 }
+    ])
+  }
+
+  {
+    const result = await collect(db.query('members/by-age', { gte: { age: 33 }, lt: { age: 99 } }))
+    t.alike(result, [
+      { id: 'andrew', age: 34 }
+    ])
+  }
+
+  t.alike(await db.get('members', { id: 'maf' }), null)
+  t.alike(await db.get('members', { id: 'andrew' }), { id: 'andrew', age: 34 })
+
+  await db.close()
+})
