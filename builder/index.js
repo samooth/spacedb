@@ -227,13 +227,13 @@ class Builder {
     return ns
   }
 
-  compile () {
+  compile ({ runtime = 'hyperdb/runtime' } = {}) {
     if (this.previous && !this.changed) {
       this.version -= 1
     }
     return {
-      messages: this.schema.toCode({ runtime: 'hyperdb/runtime' }),
-      db: generateCode(this),
+      messages: this.schema.toCode({ runtime }),
+      db: generateCode(this, { runtime }),
       changed: this.changed,
       json: this.toJSON()
     }
