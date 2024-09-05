@@ -12,18 +12,18 @@ test('basic stream', async function (t) {
   ])
 
   const overlay = [
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('f'), value: 'overlay' }
+    { key: b4a.from('b'), value: [b4a.from('b'), 'overlay'] },
+    { key: b4a.from('f'), value: [b4a.from('f'), 'overlay'] }
   ]
 
   const stream = new IndexStream(rs, { overlay })
   const datas = await collect(stream)
   const expected = [
-    { key: b4a.from('a'), value: 'stream' },
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('c'), value: 'stream' },
-    { key: b4a.from('d'), value: 'stream' },
-    { key: b4a.from('f'), value: 'overlay' }
+    [b4a.from('a'), 'stream'],
+    [b4a.from('b'), 'overlay'],
+    [b4a.from('c'), 'stream'],
+    [b4a.from('d'), 'stream'],
+    [b4a.from('f'), 'overlay']
   ]
 
   t.alike(datas, expected)
@@ -38,24 +38,24 @@ test('basic stream with map', async function (t) {
   ])
 
   const overlay = [
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('f'), value: 'overlay' }
+    { key: b4a.from('b'), value: [b4a.from('b'), 'overlay'] },
+    { key: b4a.from('f'), value: [b4a.from('f'), 'overlay'] }
   ]
 
   const stream = new IndexStream(rs, { overlay, map })
   const datas = await collect(stream)
   const expected = [
-    { key: b4a.from('a'), value: 'mapped-stream' },
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('c'), value: 'mapped-stream' },
-    { key: b4a.from('d'), value: 'mapped-stream' },
-    { key: b4a.from('f'), value: 'overlay' }
+    [b4a.from('a'), 'mapped-stream'],
+    [b4a.from('b'), 'overlay'],
+    [b4a.from('c'), 'mapped-stream'],
+    [b4a.from('d'), 'mapped-stream'],
+    [b4a.from('f'), 'overlay']
   ]
 
   t.alike(datas, expected)
 
   function map (entries) {
-    return entries.map(e => Promise.resolve({ key: e.key, value: 'mapped-' + e.value }))
+    return entries.map(e => Promise.resolve({ key: e.key, value: [e.key, 'mapped-' + e.value] }))
   }
 })
 
@@ -68,22 +68,22 @@ test('basic stream with map and limit', async function (t) {
   ])
 
   const overlay = [
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('f'), value: 'overlay' }
+    { key: b4a.from('b'), value: [b4a.from('b'), 'overlay'] },
+    { key: b4a.from('f'), value: [b4a.from('f'), 'overlay'] }
   ]
 
   const stream = new IndexStream(rs, { overlay, limit: 3, map })
   const datas = await collect(stream)
   const expected = [
-    { key: b4a.from('a'), value: 'mapped-stream' },
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('c'), value: 'mapped-stream' }
+    [b4a.from('a'), 'mapped-stream'],
+    [b4a.from('b'), 'overlay'],
+    [b4a.from('c'), 'mapped-stream']
   ]
 
   t.alike(datas, expected)
 
   function map (entries) {
-    return entries.map(e => Promise.resolve({ key: e.key, value: 'mapped-' + e.value }))
+    return entries.map(e => Promise.resolve({ key: e.key, value: [e.key, 'mapped-' + e.value] }))
   }
 })
 
@@ -96,24 +96,24 @@ test('basic stream with map in asap mode', async function (t) {
   ])
 
   const overlay = [
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('f'), value: 'overlay' }
+    { key: b4a.from('b'), value: [b4a.from('b'), 'overlay'] },
+    { key: b4a.from('f'), value: [b4a.from('f'), 'overlay'] }
   ]
 
   const stream = new IndexStream(rs, { overlay, asap: true, map })
   const datas = await collect(stream)
   const expected = [
-    { key: b4a.from('a'), value: 'mapped-stream' },
-    { key: b4a.from('b'), value: 'overlay' },
-    { key: b4a.from('c'), value: 'mapped-stream' },
-    { key: b4a.from('d'), value: 'mapped-stream' },
-    { key: b4a.from('f'), value: 'overlay' }
+    [b4a.from('a'), 'mapped-stream'],
+    [b4a.from('b'), 'overlay'],
+    [b4a.from('c'), 'mapped-stream'],
+    [b4a.from('d'), 'mapped-stream'],
+    [b4a.from('f'), 'overlay']
   ]
 
   t.alike(datas, expected)
 
   function map (entries) {
-    return entries.map(e => Promise.resolve({ key: e.key, value: 'mapped-' + e.value }))
+    return entries.map(e => Promise.resolve({ key: e.key, value: [e.key, 'mapped-' + e.value] }))
   }
 })
 

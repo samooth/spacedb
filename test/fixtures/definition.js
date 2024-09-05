@@ -31,7 +31,7 @@ const membersCollection = {
   encodeValue (version, doc) {
     return c.encode(struct, doc)
   },
-  restructure (version, keyBuffer, valueBuffer) {
+  reconstruct (version, keyBuffer, valueBuffer) {
     return c.decode(struct, valueBuffer)
   },
   indexes: []

@@ -26,6 +26,9 @@ class HyperDB {
 
     const index = this.definition.resolveIndex(indexName)
     const collection = index === null ? this.definition.resolveCollection(indexName) : index.collection
+
+    if (collection === null) throw new Error('Unknown index: ' + indexName)
+
     const limit = q.limit
     const reverse = !!q.reverse
     const version = q.version === 0 ? 0 : (q.version || this.version)
@@ -36,12 +39,12 @@ class HyperDB {
 
     if (index === null) {
       for (const u of this.updates.values()) {
-        if (withinRange(range, u.key)) overlay.push({ key: u.key, value: u.value })
+        if (withinRange(range, u.key)) overlay.push({ key: u.key, value: u.value === null ? null : [u.key, u.value] })
       }
     } else {
       for (const u of this.updates.values()) {
         for (const { key, del } of u.indexes[index.offset]) {
-          if (withinRange(range, key)) overlay.push({ key, value: del ? null : u.value })
+          if (withinRange(range, key)) overlay.push({ key, value: del ? null : [u.key, u.value] })
         }
       }
     }
@@ -50,10 +53,10 @@ class HyperDB {
 
     const stream = engine.createReadStream(range, { reverse, limit })
 
-    return new IndexStream(stream, { decode, reverse, limit, restructure: collection.restructure, overlay, map: index === null ? null : map })
+    return new IndexStream(stream, { asap: engine.asap, decode, reverse, limit, overlay, map: index === null ? null : map })
 
     function decode (key, value) {
-      return collection.restructure(version, key, value)
+      return collection.reconstruct(version, key, value)
     }
 
     function map (entries) {
@@ -75,7 +78,8 @@ class HyperDB {
 
     const key = collection.encodeKey(doc)
     const value = await this._getLatestValue(key)
-    return value === null ? null : collection.restructure(this.version, key, value)
+
+    return value === null ? null : collection.reconstruct(this.version, key, value)
   }
 
   _getLatestValue (key) {
@@ -94,7 +98,7 @@ class HyperDB {
     const prevValue = await this.engine.get(key)
     if (prevValue === null) return
 
-    const prevDoc = collection.restructure(this.version, key, prevValue)
+    const prevDoc = collection.reconstruct(this.version, key, prevValue)
 
     const u = {
       key,
@@ -117,7 +121,7 @@ class HyperDB {
 
   async insert (collectionName, doc) {
     const collection = this.definition.resolveCollection(collectionName)
-    if (collection === null) throw new Error('Unknown collection')
+    if (collection === null) throw new Error('Unknown collection: ' + collectionName)
 
     const key = collection.encodeKey(doc)
     const value = collection.encodeValue(this.version, doc)
@@ -125,7 +129,7 @@ class HyperDB {
     const prevValue = await this.engine.get(key)
     if (prevValue !== null && b4a.equals(value, prevValue)) return
 
-    const prevDoc = prevValue === null ? null : collection.restructure(this.version, key, prevValue)
+    const prevDoc = prevValue === null ? null : collection.reconstruct(this.version, key, prevValue)
 
     const u = {
       key,
