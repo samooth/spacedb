@@ -25,7 +25,10 @@ function collection0_reconstruct (version, keyBuf, valueBuf) {
   // TODO: This should be fully code generated
   const key = collection0_key.decode(keyBuf)
   const value = c.decode(resolveStruct('@db/members/value', version), valueBuf)
-  return { id: key[0], ...value }
+  return {
+    id: key[0],
+    ...value
+  }
 }
 
 // '@db/members'
@@ -106,11 +109,13 @@ for (const index of IndexMap.values()) {
 }
 
 function resolveCollection (fqn) {
-  return CollectionMap.get(fqn) || null
+  const coll = CollectionMap.get(fqn)
+  return coll || null
 }
 
 function resolveIndex (fqn) {
-  return IndexMap.get(fqn) || null
+  const index = IndexMap.get(fqn)
+  return index || null
 }
 
 module.exports = {
