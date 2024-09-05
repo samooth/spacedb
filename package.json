@@ -4,7 +4,7 @@
   "description": "P2P first db",
   "main": "index.js",
   "bin": {
-    "hyperdb": "./bin.js"
+    "hyperdb": "./builder/bin.js"
   },
   "scripts": {
     "test": "standard && brittle test/*.js"

@@ -1,6 +1,6 @@
 const Hyperschema = require('hyperschema')
 
-const generateCode = require('./lib/codegen')
+const generateCode = require('./codegen')
 
 const COLLECTION_TYPE = 1
 const INDEX_TYPE = 2

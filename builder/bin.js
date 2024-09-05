@@ -2,7 +2,7 @@
 const p = require('path')
 const fs = require('fs')
 
-const Builder = require('./builder')
+const Builder = require('./')
 
 const args = process.argv.slice(2)
 const input = args[0]
