@@ -100,14 +100,12 @@ class Index extends DBType {
     this.key = description.key
     this.unique = !!description.unique
     this.collection = this.builder.typesByName.get(description.collection)
+    this.keyEncoding = []
 
     if (!this.collection || !this.collection.isCollection) {
       throw new Error('Invalid index target: ' + description.collection)
     }
     this.collection.indexes.push(this)
-
-    this.keyEncoding = []
-    this.valueEncoding = this.collection.fqn + '/key'
 
     // Key encoding will be an IndexEncoder of the secondary index's key fields
     // If the key is not unique, then the primary key should also be included
@@ -120,10 +118,6 @@ class Index extends DBType {
         this.keyEncoding.push(component)
       }
     }
-
-    // Value encoding will be the collection's primary key value encoding if unique
-    // If non-unique, the value encoding will be empty
-    this.valueEncoding = this.unique ? this.collection.fqn + '/key' : null
   }
 
   toJSON () {

@@ -100,12 +100,14 @@ module.exports = function generateCode (hyperdb) {
   str += '\n'
 
   str += 'function resolveCollection (fqn) {\n'
-  str += '  return CollectionMap.get(fqn)\n'
+  str += '  const coll = CollectionMap.get(fqn)\n'
+  str += '  return coll || null\n'
   str += '}\n'
   str += '\n'
 
   str += 'function resolveIndex (fqn) {\n'
-  str += '  return IndexMap.get(fqn)\n'
+  str += '  const index = IndexMap.get(fqn)\n'
+  str += '  return index || null\n'
   str += '}\n'
   str += '\n'
 
@@ -130,8 +132,8 @@ function generateCommonPrefix (id, type) {
   str += `function ${id}_indexify (record) {\n`
   str += '  const arr = []\n'
   str += '\n'
-  for (let i = 0; i < type.key.length; i++) {
-    const key = type.key[i]
+  for (let i = 0; i < type.keyEncoding.length; i++) {
+    const key = type.keyEncoding[i]
     const r = (a, b, i) => (i === 0) ? gen(a, b) : gen.optional(a, b)
     str += `  const a${i} = ${key.split('.').reduce(r, 'record')}\n`
     str += `  if (a${i} === undefined) return arr\n`
@@ -151,9 +153,15 @@ function generateCollectionDefinition (id, collection) {
   str += `// ${s(collection.fqn)} reconstruction function\n`
   str += `function ${id}_reconstruct (version, keyBuf, valueBuf) {\n`
   str += '  // TODO: This should be fully code generated\n'
-  str += `  const key = ${id}_key.decode(keyBuf)\n`
+  str += '  const key = collection0_key.decode(keyBuf)\n'
   str += `  const value = c.decode(resolveStruct(${s(collection.valueEncoding)}, version), valueBuf)\n`
-  str += '  return { ...key, ...value }\n'
+  str += '  return {\n'
+  for (let i = 0; i < collection.key.length; i++) {
+    const key = collection.key[i]
+    str += `    ${gen.property(key)}: key[${i}],\n`
+  }
+  str += '    ...value\n'
+  str += '  }\n'
   str += '}\n'
 
   str += '\n'
@@ -205,7 +213,7 @@ function generateEncodeCollectionValue (collection) {
 }
 
 function generateEncodeIndexKey (id, index) {
-  const accessors = index.key.map(c => {
+  const accessors = index.keyEncoding.map(c => {
     return c.split('.').reduce(gen, 'record')
   })
   let str = ''
