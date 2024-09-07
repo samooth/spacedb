@@ -89,7 +89,7 @@ const index0 = {
       lte: lte ? index0_indexify(lte) : null
     })
   },
-  encodeValue: (doc) => index0.encodeKey(doc),
+  encodeValue: (doc) => index0.collection.encodeKey(doc),
   reconstruct: (keyBuf, valueBuf) => valueBuf,
   offset: 0,
   collection: null

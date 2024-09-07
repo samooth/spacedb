@@ -43,8 +43,8 @@ class HyperDB {
       }
     } else {
       for (const u of this.updates.values()) {
-        for (const { key, del } of u.indexes[index.offset]) {
-          if (withinRange(range, key)) overlay.push({ key, value: del ? null : [u.key, u.value] })
+        for (const { key, value } of u.indexes[index.offset]) {
+          if (withinRange(range, key)) overlay.push({ key, value: value === null ? null : [u.key, u.value] })
         }
       }
     }
@@ -113,7 +113,7 @@ class HyperDB {
 
       u.indexes.push(ups)
 
-      if (prevKey !== null) ups.push({ key: prevKey, del: true })
+      if (prevKey !== null) ups.push({ key: prevKey, value: null })
     }
 
     this.updates.set(b4a.toString(u.key, 'hex'), u)
@@ -147,8 +147,8 @@ class HyperDB {
 
       if (prevKey !== null && b4a.equals(nextKey, prevKey)) continue
 
-      if (prevKey !== null) ups.push({ key: prevKey, del: true })
-      if (nextKey !== null) ups.push({ key: nextKey, del: false })
+      if (prevKey !== null) ups.push({ key: prevKey, value: null })
+      if (nextKey !== null) ups.push({ key: nextKey, value: idx.encodeValue(doc) })
     }
 
     this.updates.set(b4a.toString(u.key, 'hex'), u)

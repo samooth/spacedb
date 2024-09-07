@@ -68,6 +68,12 @@ const membersByAgeIndex = {
 
     return memberByAge.encodeRange(r)
   },
+  encodeValue (doc) {
+    return membersCollection.encodeKey(doc)
+  },
+  reconstruct (keyBuf, valueBuf) {
+    return valueBuf
+  },
   collection: membersCollection
 }
 
