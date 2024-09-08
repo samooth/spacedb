@@ -255,7 +255,7 @@ class Builder {
   }
 
   static toDisk (hyperdb, dir) {
-    fs.mkdirSync(dir)
+    fs.mkdirSync(dir, { recursive: true })
 
     const schemaJsonPath = p.join(p.resolve(dir), SCHEMA_JSON_FILE_NAME)
     const dbJsonPath = p.join(p.resolve(dir), DB_JSON_FILE_NAME)
