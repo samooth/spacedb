@@ -6,6 +6,12 @@
   "bin": {
     "hyperdb": "./builder/bin.js"
   },
+  "files": [
+    "index.js",
+    "runtime.js",
+    "builder/**",
+    "lib/**"
+  ],
   "scripts": {
     "test": "standard && brittle test/*.js",
     "generate": "node builder/bin.js test/fixtures/build.js test/fixtures/generated --force --test-fixture"
