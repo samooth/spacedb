@@ -5,8 +5,10 @@ const b4a = require('b4a')
 const RocksEngine = require('./lib/engine/rocks')
 
 class Updates {
-  constructor (entries) {
+  constructor (clock, entries) {
     this.refs = 1
+    this.mutating = 0
+    this.clock = clock
     this.map = new Map(entries)
   }
 
@@ -32,7 +34,7 @@ class Updates {
     }
 
     this.refs--
-    return new Updates(entries)
+    return new Updates(this.clock, entries)
   }
 
   get (key) {
@@ -40,7 +42,8 @@ class Updates {
     return u === undefined ? null : u
   }
 
-  clear (key) {
+  flush (clock) {
+    this.clock = clock
     this.map.clear()
   }
 
@@ -95,18 +98,14 @@ class HyperDB {
   constructor (engine, definition, {
     version = definition.version,
     snapshot = engine.snapshot(),
-    updates = new Updates([])
+    updates = new Updates(engine.clock, [])
   } = {}) {
     this.version = version
     this.engine = engine
+    this.engineSnapshot = snapshot
     this.definition = definition
     this.updates = updates
-    this.updating = 0
     this.closing = null
-    this.closed = false
-
-    this._engineSnapshot = snapshot
-    this._engineClock = engine.clock
 
     engine.refs++
   }
@@ -117,6 +116,10 @@ class HyperDB {
 
   static rocksdb (storage, definition, opts) {
     return new HyperDB(new RocksEngine(storage), definition, opts)
+  }
+
+  get closed () {
+    return this.engine === null
   }
 
   get updated () {
@@ -136,17 +139,17 @@ class HyperDB {
     this.updates.unref()
     this.updates = null
 
-    if (this._engineSnapshot) this._engineSnapshot.unref()
-    this._engineSnapshot = null
+    if (this.engineSnapshot) this.engineSnapshot.unref()
+    this.engineSnapshot = null
 
     if (--this.engine.refs === 0) await this.engine.close()
     this.engine = null
   }
 
   snapshot () {
-    const snapshot = this._engineSnapshot === null
+    const snapshot = this.engineSnapshot === null
       ? this.engine.snapshot()
-      : this._engineSnapshot.ref()
+      : this.engineSnapshot.ref()
 
     return new HyperDB(this.engine, this.definition, {
       version: this.version,
@@ -176,7 +179,7 @@ class HyperDB {
       : index.encodeKeyRange(query)
 
     const engine = this.engine
-    const snap = this._engineSnapshot
+    const snap = this.engineSnapshot
     const overlay = this.updates.overlay(range, index, reverse)
     const stream = engine.createReadStream(snap, range, { reverse, limit })
 
@@ -214,7 +217,7 @@ class HyperDB {
 
     const key = collection.encodeKey(doc)
     const u = this.updates.get(key)
-    const value = u !== null ? u.value : await this.engine.get(this._engineSnapshot, key)
+    const value = u !== null ? u.value : await this.engine.get(this.engineSnapshot, key)
 
     return value === null ? null : collection.reconstruct(this.version, key, value)
   }
@@ -230,11 +233,11 @@ class HyperDB {
     const key = collection.encodeKey(doc)
 
     let prevValue = null
-    this.updating++
+    this.updates.mutating++
     try {
-      prevValue = await this.engine.get(this._engineSnapshot, key)
+      prevValue = await this.engine.get(this.engineSnapshot, key)
     } finally {
-      this.updating--
+      this.updates.mutating--
     }
 
     if (prevValue === null) {
@@ -269,11 +272,11 @@ class HyperDB {
     const value = collection.encodeValue(this.version, doc)
 
     let prevValue = null
-    this.updating++
+    this.updates.mutating++
     try {
-      prevValue = await this.engine.get(this._engineSnapshot, key)
+      prevValue = await this.engine.get(this.engineSnapshot, key)
     } finally {
-      this.updating--
+      this.updates.mutating--
     }
 
     if (prevValue !== null && b4a.equals(value, prevValue)) return
@@ -302,16 +305,15 @@ class HyperDB {
 
     if (this.updating > 0) throw new Error('Insert/delete in progress, refusing to commit')
     if (this.updates.size === 0) return
-    if (this._engineClock !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
+    if (this.updates.clock !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
     if (this.updates.refs > 1) this.updates = this.updates.detach()
 
     await this.engine.commit(this.updates)
-    this._engineClock = this.engine.clock
-    this.updates.clear()
+    this.updates.flush(this.engine.clock)
 
-    if (this._engineSnapshot) {
-      this._engineSnapshot.unref()
-      this._engineSnapshot = this.engine.snapshot()
+    if (this.engineSnapshot) {
+      this.engineSnapshot.unref()
+      this.engineSnapshot = this.engine.snapshot()
     }
   }
 }
