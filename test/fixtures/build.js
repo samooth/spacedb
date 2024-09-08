@@ -1,37 +1,45 @@
-const Builder = require('../../builder')
+const HyperDB = require('../../builder')
+const Hyperschema = require('hyperschema')
+const path = require('path')
 
-module.exports = function createDatabase (opts) {
-  const spec = new Builder(opts)
+const SCHEMA_DIR = path.join(__dirname, './generated/1/hyperschema')
+const DB_DIR = path.join(__dirname, './generated/1/hyperdb')
 
-  const db = spec.namespace('db')
+const schema = Hyperschema.from(SCHEMA_DIR)
 
-  db.schema.register({
-    name: 'member',
-    fields: [
-      {
-        name: 'id',
-        type: 'string',
-        required: true
-      },
-      {
-        name: 'age',
-        type: 'uint',
-        required: true
-      }
-    ]
-  })
+const dbSchema = schema.namespace('db')
 
-  db.collections.register({
-    name: 'members',
-    schema: '@db/member',
-    key: ['id']
-  })
+dbSchema.register({
+  name: 'member',
+  fields: [
+    {
+      name: 'id',
+      type: 'string',
+      required: true
+    },
+    {
+      name: 'age',
+      type: 'uint',
+      required: true
+    }
+  ]
+})
 
-  db.indexes.register({
-    name: 'members-by-age',
-    collection: '@db/members',
-    key: ['age']
-  })
+Hyperschema.toDisk(schema, SCHEMA_DIR)
 
-  return spec
-}
+const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
+const testDb = db.namespace('db')
+
+testDb.collections.register({
+  name: 'members',
+  schema: '@db/member',
+  key: ['id']
+})
+
+testDb.indexes.register({
+  name: 'members-by-age',
+  collection: '@db/members',
+  key: ['age']
+})
+
+HyperDB.toDisk(db, DB_DIR)
