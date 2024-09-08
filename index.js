@@ -202,11 +202,7 @@ class HyperDB {
   }
 
   async findOne (indexName, query, options) {
-    const stream = this.find(indexName, query, { ...options, limit: 1 })
-
-    let result = null
-    for await (const data of stream) result = data
-    return result
+    return this.find(indexName, query, { ...options, limit: 1 }).one()
   }
 
   async get (collectionName, doc) {
