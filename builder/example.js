@@ -1,5 +1,4 @@
 const p = require('path')
-const fs = require('fs')
 
 const Hyperschema = require('hyperschema')
 const HyperDB = require('.')
@@ -7,9 +6,6 @@ const HyperDB = require('.')
 const OUTPUT_DIR = './output'
 const SCHEMA_DIR = p.join(OUTPUT_DIR, 'hyperschema')
 const DB_DIR = p.join(OUTPUT_DIR, 'hyperdb')
-
-fs.mkdirSync(SCHEMA_DIR, { recursive: true })
-fs.mkdirSync(DB_DIR, { recursive: true })
 
 const schema = Hyperschema.from(SCHEMA_DIR)
 const keetSchema = schema.namespace('keet')

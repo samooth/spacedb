@@ -8,7 +8,7 @@ const COLLECTION_TYPE = 1
 const INDEX_TYPE = 2
 
 const SCHEMA_JSON_FILE_NAME = 'schema.json'
-const DB_JSON_FILE_NAME = 'db.json' 
+const DB_JSON_FILE_NAME = 'db.json'
 const CODE_FILE_NAME = 'index.js'
 
 class DBType {
@@ -205,7 +205,7 @@ class Builder {
     this.initializing = true
     if (dbJson) {
       for (let i = 0; i < dbJson.schema.length; i++) {
-        const description = json.schema[i]
+        const description = dbJson.schema[i]
         if (description.type === COLLECTION_TYPE) {
           this.registerCollection(description, description.namespace)
         } else {
@@ -250,18 +250,20 @@ class Builder {
     return {
       version: this.version,
       offset: this.offset,
-      schema: this.orderedTypes.map(t => t.toJSON()) 
+      schema: this.orderedTypes.map(t => t.toJSON())
     }
   }
 
   static toDisk (hyperdb, dir) {
+    fs.mkdirSync(dir)
+
     const schemaJsonPath = p.join(p.resolve(dir), SCHEMA_JSON_FILE_NAME)
     const dbJsonPath = p.join(p.resolve(dir), DB_JSON_FILE_NAME)
     const codePath = p.join(p.resolve(dir), CODE_FILE_NAME)
+
     fs.writeFileSync(schemaJsonPath, JSON.stringify(hyperdb.schema.toJSON(), null, 2), { encoding: 'utf-8' })
-    fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8'})
+    fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8' })
     fs.writeFileSync(codePath, generateCode(hyperdb), { encoding: 'utf-8' })
-    
   }
 
   static from (schemaJson, dbJson) {
