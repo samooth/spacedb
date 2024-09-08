@@ -50,6 +50,10 @@ class Updates {
     return u
   }
 
+  delete (key) {
+    this.map.delete(b4a.toString(key, 'hex'))
+  }
+
   entries () {
     return this.map.values()
   }
@@ -97,6 +101,7 @@ class HyperDB {
     this.engine = engine
     this.definition = definition
     this.updates = updates
+    this.updating = 0
     this.closing = null
     this.closed = false
 
@@ -224,8 +229,18 @@ class HyperDB {
 
     const key = collection.encodeKey(doc)
 
-    const prevValue = await this.engine.get(this._engineSnapshot, key)
-    if (prevValue === null) return
+    let prevValue = null
+    this.updating++
+    try {
+      prevValue = await this.engine.get(this._engineSnapshot, key)
+    } finally {
+      this.updating--
+    }
+
+    if (prevValue === null) {
+      this.updates.delete(key)
+      return
+    }
 
     const prevDoc = collection.reconstruct(this.version, key, prevValue)
 
@@ -253,7 +268,14 @@ class HyperDB {
     const key = collection.encodeKey(doc)
     const value = collection.encodeValue(this.version, doc)
 
-    const prevValue = await this.engine.get(this._engineSnapshot, key)
+    let prevValue = null
+    this.updating++
+    try {
+      prevValue = await this.engine.get(this._engineSnapshot, key)
+    } finally {
+      this.updating--
+    }
+
     if (prevValue !== null && b4a.equals(value, prevValue)) return
 
     const prevDoc = prevValue === null ? null : collection.reconstruct(this.version, key, prevValue)
@@ -278,6 +300,7 @@ class HyperDB {
   async flush () {
     maybeClosed(this)
 
+    if (this.updating > 0) throw new Error('Insert/delete in progress, refusing to commit')
     if (this.updates.size === 0) return
     if (this._engineClock !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
     if (this.updates.refs > 1) this.updates = this.updates.detach()

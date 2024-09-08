@@ -193,3 +193,14 @@ test('generated delete record', async function (t) {
 
   await db.close()
 })
+
+test('delete from memview', async function (t) {
+  const db = await rocks(t)
+
+  await db.insert('@db/members', { id: 'maf', age: 34 })
+  await db.delete('@db/members', { id: 'maf' })
+
+  t.is(await db.get('@db/members', { id: 'maf' }), null)
+
+  await db.close()
+})
