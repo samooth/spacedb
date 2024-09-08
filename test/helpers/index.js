@@ -4,7 +4,7 @@ const tmp = require('test-tmp')
 exports.rocks = async function (t, def, opts) {
   if (!HyperDB.isDefinition(def)) return exports.rocks(t, require('../fixtures/generated'), def)
 
-  const db = HyperDB.rocksdb(await tmp(t), def, opts)
+  const db = HyperDB.rocks(await tmp(t), def, opts)
   const engine = db.engine
 
   // just to help catch leaks

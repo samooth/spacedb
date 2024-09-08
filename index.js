@@ -114,8 +114,12 @@ class HyperDB {
     return !!(definition && typeof definition.resolveCollection === 'function')
   }
 
-  static rocksdb (storage, definition, opts) {
-    return new HyperDB(new RocksEngine(storage), definition, opts)
+  static rocks (storage, definition, options) {
+    return new HyperDB(new RocksEngine(storage), definition, options)
+  }
+
+  static bee (bee, definition, options) {
+    throw new Error('TODO')
   }
 
   get closed () {

@@ -1,6 +1,6 @@
 # hyperdb
 
-WIP - nothing to see here
+Database built for P2P and local indexing
 
 ```
 npm install hyperdb
@@ -8,10 +8,105 @@ npm install hyperdb
 
 ## Usage
 
-``` js
-const hyperdb = require('hyperdb')
+First generate your definition with the builder.
+The definition defines the schemas and collections you wanna use.
+
+```js
+// TODO example
 ```
+
+Then boot your db. You can use the same defition for a fully local db and a P2P one.
+
+``` js
+const HyperDB = require('hyperdb')
+
+// first choose your engine
+const db = HyperDB.rocks('./my-rocks.db', require('./my-definition'))
+```
+
+It is that simple.
+
+## API
+
+#### `db = Hyperdb.bee(bee, definition, [options])`
+
+Make a db backed by Hyperbee. P2P!
+
+#### `db = Hyperdb.rocks(bee, definition, [options])`
+
+Make a db backed by RocksDB. Local only!
+
+#### `queryStream = db.find(collectionOrIndex, query, [options])`
+
+Query the database. `collectionOrIndex` is the identifier you defined in your builder.
+
+The query looks like this
+
+``` js
+{
+  gt: { ... },
+  gte: { ... },
+  lt: { ...},
+  lte: { ...}
+}
+```
+
+And options include
+
+```js
+{
+  limit, // how many max?
+  reverse // reverse stream?
+}
+```
+
+See the basic tests for an easy example on how queries look like.
+
+The `queryStream` is a streamx readable stream that yields the documents you search for.
+
+A query is always running on a snapshot, meaning any inserts/deletes you do while this is running
+will not impact the query stream itself.
+
+#### `all = await queryStream.toArray()`
+
+Stream helper to simply get all the remaining entries in the stream.
+
+#### `one = await queryStream.one()`
+
+Stream helper to simply get the last entry in the stream.
+
+#### `doc = await db.findOne(collectionOrIndex, query, [options])`
+
+Alias for `await find(...).one()`
+
+#### `doc = await db.get(collection, query)`
+
+Get a document from a collection
+
+#### `await db.insert(collection, doc)`
+
+Insert a document into a collection. NOTE: you have to flush the db later for this to be persisted.
+
+#### `await db.delete(collection, query)`
+
+Delete a document from a collection. NOTE: you have to flush the db later for this to be persisted.
+
+#### `db.updated`
+
+Boolean indicating if this database was updated by you.
+
+#### `await db.flush()`
+
+Flush all changes to the db
+
+#### `db = db.snapshot()`
+
+Make a snapshot of the database. All reads/streams are locked in time on a snapshot from the time you call the snapshot method.
+
+#### `await db.close()`
+
+Close the database. You have to close any snapshots you use also.
 
 ## License
 
-MIT
+Apache-2.0
