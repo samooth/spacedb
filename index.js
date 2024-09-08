@@ -98,13 +98,16 @@ class HyperDB {
   constructor (engine, definition, {
     version = definition.version,
     snapshot = engine.snapshot(),
-    updates = new Updates(engine.clock, [])
+    updates = new Updates(engine.clock, []),
+    rootInstance = null,
+    writable = true
   } = {}) {
     this.version = version
     this.engine = engine
     this.engineSnapshot = snapshot
     this.definition = definition
     this.updates = updates
+    this.rootInstance = writable === true ? (rootInstance || this) : null
     this.closing = null
 
     engine.refs++
@@ -130,6 +133,14 @@ class HyperDB {
     return this.updates.size > 0
   }
 
+  get writable () {
+    return this.rootInstance !== null
+  }
+
+  get readable () {
+    return this.closing !== null
+  }
+
   ready () {
     return this.engine.ready()
   }
@@ -148,9 +159,11 @@ class HyperDB {
 
     if (--this.engine.refs === 0) await this.engine.close()
     this.engine = null
+
+    this.rootInstance = null
   }
 
-  snapshot () {
+  _createSnapshot (rootInstance, writable) {
     const snapshot = this.engineSnapshot === null
       ? this.engine.snapshot()
       : this.engineSnapshot.ref()
@@ -158,8 +171,22 @@ class HyperDB {
     return new HyperDB(this.engine, this.definition, {
       version: this.version,
       snapshot,
-      updates: this.updates.ref()
+      updates: this.updates.ref(),
+      rootInstance,
+      writable
     })
+  }
+
+  snapshot () {
+    return this._createSnapshot(null, false)
+  }
+
+  transaction () {
+    if (this.rootInstance !== null) {
+      throw new Error('Can only make transactions on main instance')
+    }
+
+    return this._createSnapshot(this, true)
   }
 
   find (indexName, query = {}, options) {
@@ -300,21 +327,31 @@ class HyperDB {
     }
   }
 
-  async flush () {
+  update () {
     maybeClosed(this)
 
-    if (this.updating > 0) throw new Error('Insert/delete in progress, refusing to commit')
-    if (this.updates.size === 0) return
-    if (this.updates.clock !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
     if (this.updates.refs > 1) this.updates = this.updates.detach()
-
-    await this.engine.commit(this.updates)
     this.updates.flush(this.engine.clock)
 
     if (this.engineSnapshot) {
       this.engineSnapshot.unref()
       this.engineSnapshot = this.engine.snapshot()
     }
+  }
+
+  async flush () {
+    maybeClosed(this)
+
+    if (this.updating > 0) throw new Error('Insert/delete in progress, refusing to commit')
+    if (this.rootInstance === null) throw new Error('Instance is not writable, refusing to commit')
+    if (this.updates.size === 0) return
+    if (this.updates.clock !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
+    if (this.updates.refs > 1) this.updates = this.updates.detach()
+
+    await this.engine.commit(this.updates)
+
+    this.update()
+    if (this.rootInstance !== this) this.rootInstance.update()
   }
 }
 
