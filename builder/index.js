@@ -1,9 +1,15 @@
+const p = require('path')
+const fs = require('fs')
 const Hyperschema = require('hyperschema')
 
 const generateCode = require('./codegen')
 
 const COLLECTION_TYPE = 1
 const INDEX_TYPE = 2
+
+const SCHEMA_JSON_FILE_NAME = 'schema.json'
+const DB_JSON_FILE_NAME = 'db.json' 
+const CODE_FILE_NAME = 'index.js'
 
 class DBType {
   constructor (builder, namespace, description) {
@@ -78,6 +84,7 @@ class Collection extends DBType {
     const primaryKeySet = new Set(this.key)
     this.builder.schema.register({
       ...this.schema.toJSON(),
+      derived: true,
       flagsPosition: -1,
       namespace: this.namespace,
       name: this.description.name + '/value',
@@ -181,20 +188,32 @@ class BuilderNamespace {
 }
 
 class Builder {
-  constructor ({ version = 1, offset = 1, previous = null } = {}) {
+  constructor (schema, dbJson) {
+    this.schema = schema
+    this.version = dbJson ? dbJson.version : 0
+    this.offset = dbJson ? dbJson.offset : 0
+
     this.namespaces = new Map()
     this.typesByName = new Map()
     this.typesById = new Map()
     this.orderedTypes = []
-    this.offset = offset
 
-    this.previous = previous
-    this.version = previous ? previous.version + 1 : version
-
-    this.schema = new Hyperschema()
     this.pathsByName = new Map()
     this.pathMap = new Map()
     this.currentOffset = this.offset
+
+    this.initializing = true
+    if (dbJson) {
+      for (let i = 0; i < dbJson.schema.length; i++) {
+        const description = json.schema[i]
+        if (description.type === COLLECTION_TYPE) {
+          this.registerCollection(description, description.namespace)
+        } else {
+          this.registerIndex(description, description.namespace)
+        }
+      }
+    }
+    this.initializing = false
   }
 
   _assignId (type) {
@@ -227,48 +246,39 @@ class Builder {
     return ns
   }
 
-  compile ({ runtime = 'hyperdb/runtime' } = {}) {
-    if (this.previous && !this.changed) {
-      this.version -= 1
-    }
-    return {
-      messages: this.schema.toCode({ runtime }),
-      db: generateCode(this, { runtime }),
-      changed: this.changed,
-      json: this.toJSON()
-    }
-  }
-
   toJSON () {
     return {
       version: this.version,
       offset: this.offset,
-      types: this.schema.toJSON(),
-      db: {
-        namespaces: [...this.namespaces.values()].map(ns => ns.toJSON()),
-        schema: [...this.typesById.values()].map(type => type.toJSON())
-      }
+      schema: this.orderedTypes.map(t => t.toJSON()) 
     }
   }
 
-  static fromJSON (json, opts) {
-    const builder = new this({ ...opts, version: json.version, unsafe: json.unsafe })
-    for (const type of json.types.schema) {
-      builder.schema.register(type)
-    }
-    for (const description of json.db.namespaces) {
-      builder.namespace(description.name, description)
-    }
-    for (const typeDescription of json.db.schema) {
-      if (typeDescription.type === INDEX_TYPE) {
-        builder.registerIndex(typeDescription, typeDescription.namespace)
-      } else if (typeDescription.type === COLLECTION_TYPE) {
-        builder.registerCollection(typeDescription, typeDescription.namespace)
-      } else {
-        throw new Error('Unsupported type: ' + typeDescription.type)
+  static toDisk (hyperdb, dir) {
+    const schemaJsonPath = p.join(p.resolve(dir), SCHEMA_JSON_FILE_NAME)
+    const dbJsonPath = p.join(p.resolve(dir), DB_JSON_FILE_NAME)
+    const codePath = p.join(p.resolve(dir), CODE_FILE_NAME)
+    fs.writeFileSync(schemaJsonPath, JSON.stringify(hyperdb.schema.toJSON(), null, 2), { encoding: 'utf-8' })
+    fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8'})
+    fs.writeFileSync(codePath, generateCode(hyperdb), { encoding: 'utf-8' })
+    
+  }
+
+  static from (schemaJson, dbJson) {
+    const schema = Hyperschema.from(schemaJson)
+    if (typeof dbJson === 'string') {
+      const jsonFilePath = p.join(p.resolve(dbJson), DB_JSON_FILE_NAME)
+      let exists = false
+      try {
+        fs.statSync(jsonFilePath)
+        exists = true
+      } catch (err) {
+        if (err.code !== 'ENOENT') throw err
       }
+      if (exists) return new this(schema, JSON.parse(fs.readFileSync(jsonFilePath)))
+      return new this(schema, null)
     }
-    return builder
+    return new this(schema, dbJson)
   }
 }
 

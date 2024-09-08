@@ -13,7 +13,7 @@
   "dependencies": {
     "b4a": "^1.6.6",
     "compact-encoding": "^2.15.0",
-    "hyperschema": "^0.0.5",
+    "hyperschema": "^0.0.6",
     "generate-object-property": "^2.0.0",
     "generate-string": "^1.0.1",
     "rocksdb-native": "^2.3.1",
