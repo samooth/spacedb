@@ -99,9 +99,18 @@ Boolean indicating if this database was updated by you.
 
 Flush all changes to the db
 
+#### `db.reload()`
+
+Reload the internal snapshot. Clears the memory state.
+
 #### `db = db.snapshot()`
 
-Make a snapshot of the database. All reads/streams are locked in time on a snapshot from the time you call the snapshot method.
+Make a readonly snapshot of the database. All reads/streams are locked in time on a snapshot from the time you call the snapshot method.
+
+#### `db = db.transaction()`
+
+Make a writable snapshot of the database. All reads/streams are locked in time on a snapshot from the time you call the snapshot method.
+When you flush this one, it updates the main instance also.
 
 #### `await db.close()`
 

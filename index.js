@@ -327,7 +327,7 @@ class HyperDB {
     }
   }
 
-  update () {
+  reload () {
     maybeClosed(this)
 
     if (this.updates.refs > 1) this.updates = this.updates.detach()
@@ -350,8 +350,8 @@ class HyperDB {
 
     await this.engine.commit(this.updates)
 
-    this.update()
-    if (this.rootInstance !== this) this.rootInstance.update()
+    this.reload()
+    if (this.rootInstance !== this) this.rootInstance.reload()
   }
 }
 
