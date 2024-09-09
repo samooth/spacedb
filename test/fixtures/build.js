@@ -25,7 +25,7 @@ dbSchema.register({
   ]
 })
 
-Hyperschema.toDisk(schema, SCHEMA_DIR)
+Hyperschema.toDisk(schema)
 
 const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
 const testDb = db.namespace('db')
@@ -42,4 +42,4 @@ testDb.indexes.register({
   key: ['age']
 })
 
-HyperDB.toDisk(db, DB_DIR)
+HyperDB.toDisk(db)
