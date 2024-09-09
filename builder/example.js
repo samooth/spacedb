@@ -77,15 +77,15 @@ example.register({
 Hyperschema.toDisk(schema)
 
 const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
-const keetDb = db.namespace('keet')
+const exampleDb = db.namespace('example')
 
-keetDb.collections.register({
+exampleDb.collections.register({
   name: 'collection1',
   schema: '@example/record1',
   key: ['id1', 'id2']
 })
 
-keetDb.indexes.register({
+exampleDb.indexes.register({
   name: 'collection1-by-struct',
   collection: '@example/collection1',
   key: ['struct1.field1', 'struct1.field2'],
