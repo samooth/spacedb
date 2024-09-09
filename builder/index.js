@@ -9,6 +9,7 @@ const INDEX_TYPE = 2
 
 const DB_JSON_FILE_NAME = 'db.json'
 const CODE_FILE_NAME = 'index.js'
+const MESSAGES_FILE_NAME = 'messages.js'
 
 class DBType {
   constructor (builder, namespace, description) {
@@ -187,11 +188,12 @@ class BuilderNamespace {
 }
 
 class Builder {
-  constructor (schema, dbJson, { dir = null } = {}) {
+  constructor (schema, dbJson, { dbDir = null, schemaDir = null } = {}) {
     this.schema = schema
     this.version = dbJson ? dbJson.version : 0
     this.offset = dbJson ? dbJson.offset : 0
-    this.dir = dir
+    this.dbDir = dbDir
+    this.schemaDir = schemaDir
 
     this.namespaces = new Map()
     this.typesByName = new Map()
@@ -254,13 +256,15 @@ class Builder {
     }
   }
 
-  static toDisk (hyperdb, dir) {
-    if (!dir) dir = hyperdb.dir
-    fs.mkdirSync(dir, { recursive: true })
+  static toDisk (hyperdb, dbDir) {
+    if (!dbDir) dbDir = hyperdb.dbDir
+    fs.mkdirSync(dbDir, { recursive: true })
 
-    const dbJsonPath = p.join(p.resolve(dir), DB_JSON_FILE_NAME)
-    const codePath = p.join(p.resolve(dir), CODE_FILE_NAME)
+    const messagesPath = p.join(p.resolve(dbDir), MESSAGES_FILE_NAME)
+    const dbJsonPath = p.join(p.resolve(dbDir), DB_JSON_FILE_NAME)
+    const codePath = p.join(p.resolve(dbDir), CODE_FILE_NAME)
 
+    fs.writeFileSync(messagesPath, hyperdb.schema.toCode(), { encoding: 'utf-8' })
     fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8' })
     fs.writeFileSync(codePath, generateCode(hyperdb), { encoding: 'utf-8' })
   }
@@ -276,8 +280,9 @@ class Builder {
       } catch (err) {
         if (err.code !== 'ENOENT') throw err
       }
-      if (exists) return new this(schema, JSON.parse(fs.readFileSync(jsonFilePath)), { dir: dbJson })
-      return new this(schema, null, { dir: dbJson })
+      const opts = { dbDir: dbJson, schemaDir: schemaJson }
+      if (exists) return new this(schema, JSON.parse(fs.readFileSync(jsonFilePath)), opts)
+      return new this(schema, null, opts)
     }
     return new this(schema, dbJson)
   }

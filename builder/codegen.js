@@ -54,7 +54,7 @@ module.exports = function generateCode (hyperdb) {
   str += '\n'
   str += 'const { IndexEncoder, c } = require(\'hyperdb/runtime\')\n'
   str += '\n'
-  str += `const { version, resolveStruct } = require('${generateRequire(hyperdb.dir, hyperdb.schema.dir)}')\n`
+  str += `const { version, resolveStruct } = require('./messages.js')\n`
   str += '\n'
 
   const collections = []
