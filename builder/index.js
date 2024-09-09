@@ -136,7 +136,7 @@ class Index extends DBType {
     return {
       ...super.toJSON(),
       type: INDEX_TYPE,
-      collection: this.collection,
+      collection: this.description.collection,
       unique: this.unique,
       key: this.key
     }
