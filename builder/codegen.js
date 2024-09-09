@@ -25,6 +25,7 @@ const type = contract.resolveIndex('@keet/devices-by-name')
 
 const gen = require('generate-object-property')
 const s = require('generate-string')
+const path = require('path')
 
 const IndexTypeMap = new Map([
   ['uint', 'IndexEncoder.UINT'],
@@ -53,7 +54,7 @@ module.exports = function generateCode (hyperdb) {
   str += '\n'
   str += 'const { IndexEncoder, c } = require(\'hyperdb/runtime\')\n'
   str += '\n'
-  str += 'const { version, resolveStruct } = require(\'./messages.js\')\n'
+  str += `const { version, resolveStruct } = require('${generateRequire(hyperdb.dir, hyperdb.schema.dir)}')\n`
   str += '\n'
 
   const collections = []
@@ -236,4 +237,8 @@ function generateIndexKeyEncoding (type) {
   }
   str += `], { prefix: ${type.id} })`
   return str
+}
+
+function generateRequire (from, to) {
+  return path.relative(from, to).replace(/\\/g, '/') // unix paths for require
 }
