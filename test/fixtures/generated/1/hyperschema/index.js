@@ -21,8 +21,8 @@ const encoding0 = {
   },
   decode (state) {
     const res = {}
-    if (version >= 0) res.id = null
-    if (version >= 0) res.age = 0
+    res.id = null
+    res.age = 0
 
     res.id = c.string.decode(state)
     res.age = c.uint.decode(state)

@@ -11,13 +11,13 @@
           "name": "id",
           "required": true,
           "type": "string",
-          "version": 0
+          "version": 1
         },
         {
           "name": "age",
           "required": true,
           "type": "uint",
-          "version": 0
+          "version": 1
         }
       ]
     }
