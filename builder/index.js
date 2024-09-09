@@ -7,7 +7,6 @@ const generateCode = require('./codegen')
 const COLLECTION_TYPE = 1
 const INDEX_TYPE = 2
 
-const SCHEMA_JSON_FILE_NAME = 'schema.json'
 const DB_JSON_FILE_NAME = 'db.json'
 const CODE_FILE_NAME = 'index.js'
 
@@ -188,10 +187,11 @@ class BuilderNamespace {
 }
 
 class Builder {
-  constructor (schema, dbJson) {
+  constructor (schema, dbJson, { dir = null } = {}) {
     this.schema = schema
     this.version = dbJson ? dbJson.version : 0
     this.offset = dbJson ? dbJson.offset : 0
+    this.dir = dir
 
     this.namespaces = new Map()
     this.typesByName = new Map()
@@ -255,13 +255,12 @@ class Builder {
   }
 
   static toDisk (hyperdb, dir) {
+    if (!dir) dir = hyperdb.dir
     fs.mkdirSync(dir, { recursive: true })
 
-    const schemaJsonPath = p.join(p.resolve(dir), SCHEMA_JSON_FILE_NAME)
     const dbJsonPath = p.join(p.resolve(dir), DB_JSON_FILE_NAME)
     const codePath = p.join(p.resolve(dir), CODE_FILE_NAME)
 
-    fs.writeFileSync(schemaJsonPath, JSON.stringify(hyperdb.schema.toJSON(), null, 2), { encoding: 'utf-8' })
     fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8' })
     fs.writeFileSync(codePath, generateCode(hyperdb), { encoding: 'utf-8' })
   }
@@ -277,8 +276,8 @@ class Builder {
       } catch (err) {
         if (err.code !== 'ENOENT') throw err
       }
-      if (exists) return new this(schema, JSON.parse(fs.readFileSync(jsonFilePath)))
-      return new this(schema, null)
+      if (exists) return new this(schema, JSON.parse(fs.readFileSync(jsonFilePath)), { dir: dbJson })
+      return new this(schema, null, { dir: dbJson })
     }
     return new this(schema, dbJson)
   }

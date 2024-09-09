@@ -1,48 +1,45 @@
-const p = require('path')
-
 const Hyperschema = require('hyperschema')
 const HyperDB = require('.')
 
-const OUTPUT_DIR = './output'
-const SCHEMA_DIR = p.join(OUTPUT_DIR, 'hyperschema')
-const DB_DIR = p.join(OUTPUT_DIR, 'hyperdb')
+const SCHEMA_DIR = './output/hyperschema'
+const DB_DIR = './output/hyperdb'
 
 const schema = Hyperschema.from(SCHEMA_DIR)
-const keetSchema = schema.namespace('keet')
+const example = schema.namespace('example')
 
-keetSchema.register({
-  name: 'core-key',
+example.register({
+  name: 'alias1',
   alias: 'fixed32'
 })
 
-keetSchema.register({
-  name: 'oplog-message-id',
+example.register({
+  name: 'struct1',
   compact: true,
   fields: [
     {
-      name: 'key',
-      type: '@keet/core-key',
+      name: 'field1',
+      type: '@example/alias1',
       required: true
     },
     {
-      name: 'seq',
+      name: 'field1',
       type: 'uint',
       required: true
     }
   ]
 })
 
-keetSchema.register({
-  name: 'device',
+example.register({
+  name: 'struct2',
   fields: [
     {
-      name: 'key',
-      type: '@keet/core-key',
+      name: 'field1',
+      type: '@example/struct1',
       required: true
     },
     {
-      name: 'swarmKey',
-      type: '@keet/core-key',
+      name: 'field2',
+      type: '@example/struct1',
       required: true
     },
     {
@@ -52,22 +49,22 @@ keetSchema.register({
   ]
 })
 
-keetSchema.register({
-  name: 'chat-message',
+example.register({
+  name: 'record1',
   fields: [
     {
-      name: 'thread',
+      name: 'id1',
       type: 'uint',
       required: true
     },
     {
-      name: 'seq',
+      name: 'id2',
       type: 'uint',
       required: true
     },
     {
-      name: 'messageId',
-      type: '@keet/oplog-message-id',
+      name: 'struct1',
+      type: '@example/struct2',
       required: true
     },
     {
@@ -77,22 +74,22 @@ keetSchema.register({
   ]
 })
 
-Hyperschema.toDisk(schema, SCHEMA_DIR)
+Hyperschema.toDisk(schema)
 
 const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
 const keetDb = db.namespace('keet')
 
 keetDb.collections.register({
-  name: 'chat',
-  schema: '@keet/chat-message',
-  key: ['thread', 'seq']
+  name: 'collection1',
+  schema: '@example/record1',
+  key: ['id1', 'id2']
 })
 
 keetDb.indexes.register({
-  name: 'chat-by-message-id',
-  collection: '@keet/chat',
-  key: ['messageId.key', 'messageId.seq'],
+  name: 'collection1-by-struct',
+  collection: '@example/collection1',
+  key: ['struct1.field1', 'struct1.field2'],
   unique: true
 })
 
-HyperDB.toDisk(db, DB_DIR)
+HyperDB.toDisk(db)
