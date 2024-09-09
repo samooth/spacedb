@@ -200,8 +200,6 @@ class Builder {
     this.typesById = new Map()
     this.orderedTypes = []
 
-    this.pathsByName = new Map()
-    this.pathMap = new Map()
     this.currentOffset = this.offset
 
     this.initializing = true
@@ -231,12 +229,16 @@ class Builder {
 
   registerCollection (description, namespace) {
     const collection = new Collection(this, namespace, description)
+    if (this.typesByName.has(collection.fqn)) return
+
     this.orderedTypes.push(collection)
     this.typesByName.set(collection.fqn, collection)
   }
 
   registerIndex (description, namespace) {
     const index = new Index(this, namespace, description)
+    if (this.typesByName.has(index.fqn)) return
+
     this.orderedTypes.push(index)
     this.typesByName.set(index.fqn, index)
   }
