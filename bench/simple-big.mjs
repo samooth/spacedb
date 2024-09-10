@@ -29,7 +29,6 @@ await timeQuery('10 members-by-age', '@db/members-by-age', { limit: 10 })
 await timeQuery('10k members', '@db/members', { limit: 10_000 })
 await timeQuery('last 10 members', '@db/members', { limit: 10, reverse: true })
 
-
 function timeQuery (label, index, query) {
   console.time(label)
   return new Promise((resolve) => {
