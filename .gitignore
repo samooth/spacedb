@@ -6,3 +6,4 @@ package-lock.json
 rocks.db
 sandbox.mjs
 sandbox
+*.db
