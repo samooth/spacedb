@@ -108,6 +108,7 @@ class HyperDB {
     this.definition = definition
     this.updates = updates
     this.rootInstance = writable === true ? (rootInstance || this) : null
+    this.watchers = null
     this.closing = null
 
     engine.refs++
@@ -148,6 +149,16 @@ class HyperDB {
   close () {
     if (this.closing === null) this.closing = this._close()
     return this.closing
+  }
+
+  watch (fn) {
+    if (this.watchers === null) this.watchers = new Set()
+    this.watchers.add(fn)
+  }
+
+  unwatch (fn) {
+    if (this.watchers === null) return
+    this.watchers.delete(fn)
   }
 
   async _close () {
@@ -336,6 +347,10 @@ class HyperDB {
     if (this.engineSnapshot) {
       this.engineSnapshot.unref()
       this.engineSnapshot = this.engine.snapshot()
+    }
+
+    if (this.watchers !== null) {
+      for (const fn of this.watchers) fn()
     }
   }
 

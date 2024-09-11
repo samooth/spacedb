@@ -204,3 +204,43 @@ test('delete from memview', async function (t) {
 
   await db.close()
 })
+
+test('watch', async function (t) {
+  t.plan(4)
+
+  const db = await rocks(t)
+
+  let changed = false
+
+  db.watch(function () {
+    changed = true
+  })
+
+  await db.insert('@db/members', { id: 'maf', age: 34 })
+  await db.flush()
+
+  t.ok(changed)
+  changed = false
+
+  // noop
+  await db.insert('@db/members', { id: 'maf', age: 34 })
+  await db.flush()
+
+  t.ok(!changed)
+  changed = false
+
+  // also noop
+  await db.insert('@db/members', { id: 'maf2', age: 34 })
+  await db.delete('@db/members', { id: 'maf2' })
+  await db.flush()
+
+  t.ok(!changed)
+  changed = false
+
+  await db.insert('@db/members', { id: 'maf3', age: 34 })
+  await db.flush()
+
+  t.ok(changed)
+
+  await db.close()
+})
