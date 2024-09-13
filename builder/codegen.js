@@ -17,7 +17,7 @@ const type = contract.resolveIndex('@keet/devices-by-name')
 {
   name: '@keet/devices-by-name',
   offset, -> position in the collection's index array
-  encodeKey, -> full record (index encode internally) to buffer
+  encodeKeys, -> full record (index encode internally) to an array of buffers
   encodeKeyRange, -> range options with full records (index encode internally) -> (all gt/lte options set)
   collection
 }
@@ -168,7 +168,7 @@ function generateCollectionDefinition (id, collection) {
   str += `// ${s(collection.fqn)}\n`
   str += `const ${id} = {\n`
   str += `  name: ${s(collection.fqn)},\n`
-  str += `  encodeKey: ${generateEncodeIndexKey(id, collection)},\n`
+  str += `  encodeKey: ${generateEncodeCollectionKey(id, collection)},\n`
   str += `  encodeKeyRange: ${generateEncodeKeyRange(id, collection)},\n`
   str += `  encodeValue: ${generateEncodeCollectionValue(collection)},\n`
   str += `  reconstruct: ${id}_reconstruct,\n`
@@ -183,7 +183,7 @@ function generateIndexDefinition (id, index) {
   str += `const ${id} = {\n`
   str += `  _collectionName: ${s(index.description.collection)},\n`
   str += `  name: ${s(index.fqn)},\n`
-  str += `  encodeKey: ${generateEncodeIndexKey(id, index)},\n`
+  str += `  encodeKeys: ${generateEncodeIndexKeys(id, index)},\n`
   str += `  encodeKeyRange: ${generateEncodeKeyRange(id, index)},\n`
   str += `  encodeValue: (doc) => ${id}.collection.encodeKey(doc),\n`
   str += '  reconstruct: (keyBuf, valueBuf) => valueBuf,\n'
@@ -214,14 +214,26 @@ function generateEncodeCollectionValue (collection) {
   return str
 }
 
-function generateEncodeIndexKey (id, index) {
-  const accessors = index.fullKey.map(c => {
+function generateEncodeCollectionKey (id, collection) {
+  const accessors = collection.fullKey.map(c => {
     return c.split('.').reduce(gen, 'record')
   })
   let str = ''
   str += 'function encodeKey (record) {\n'
   str += `    const key = [${accessors.join(', ')}]\n`
   str += `    return ${id + '_key'}.encode(key)\n`
+  str += '  }'
+  return str
+}
+
+function generateEncodeIndexKeys (id, index) {
+  const accessors = index.fullKey.map(c => {
+    return c.split('.').reduce(gen, 'record')
+  })
+  let str = ''
+  str += 'function encodeKeys (record) {\n'
+  str += `    const key = [${accessors.join(', ')}]\n`
+  str += `    return [${id + '_key'}.encode(key)]\n`
   str += '  }'
   return str
 }
