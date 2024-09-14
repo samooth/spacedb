@@ -24,6 +24,7 @@ const type = contract.resolveIndex('@keet/devices-by-name')
 */
 
 const gen = require('generate-object-property')
+const genFunc = require('generate-function')
 const s = require('generate-string')
 
 const IndexTypeMap = new Map([
@@ -122,12 +123,27 @@ module.exports = function generateCode (hyperdb) {
   return str
 }
 
+function toArrayFunction (fn) {
+  const i = fn.indexOf('(')
+  const isArrow = !fn.slice(0, i).includes('function')
+  fn = fn.slice(i)
+  if (isArrow) return fn
+  return fn.replace('{', '=> {')
+}
+
 function generateCommonPrefix (id, type) {
   let str = ''
 
   str += `// ${s(type.fqn)} collection key\n`
   str += `const ${id}_key = ${generateIndexKeyEncoding(type)}\n`
   str += '\n'
+
+  if (type.isMapped) {
+    const fn = genFunc()
+    fn(type.map)
+    str += `const ${id}_map = ${toArrayFunction(fn.toString())}\n`
+    str += '\n'
+  }
 
   str += `function ${id}_indexify (record) {\n`
   str += '  const arr = []\n'
@@ -227,23 +243,35 @@ function generateEncodeCollectionKey (id, collection) {
 }
 
 function generateEncodeIndexKeys (id, index) {
-  const accessors = index.fullKey.map(c => {
-    return c.split('.').reduce(gen, 'record')
-  })
   let str = ''
-  str += 'function encodeKeys (record) {\n'
-  str += `    const key = [${accessors.join(', ')}]\n`
-  str += `    return [${id + '_key'}.encode(key)]\n`
+  str += 'function encodeKeys (record, context) {\n'
+  if (index.isMapped) {
+    const accessors = index.fullKey.map(c => {
+      return c.split('.').reduce(gen, 'structKey')
+    })
+    str += `    const mapped = ${id}_map(record, context)\n`
+    str += '    const keys = new Array(mapped.length)\n'
+    str += '    for (let i = 0; i < keys.length; i++) {\n'
+    str += '      const structKey = mapped[i]\n'
+    str += `      keys[i] = ${id + '_key'}.encode([${accessors.join(', ')}])\n`
+    str += '    }\n'
+    str += '    return keys\n'
+  } else {
+    const accessors = index.fullKey.map(c => {
+      return c.split('.').reduce(gen, 'record')
+    })
+    str += `    return [${id + '_key'}.encode([${accessors.join(', ')}])]\n`
+  }
   str += '  }'
   return str
 }
 
 function generateIndexKeyEncoding (type) {
   let str = 'new IndexEncoder([\n'
-  for (let i = 0; i < type.fullKey.length; i++) {
+  for (let i = 0; i < type.keyEncoding.length; i++) {
     const component = type.keyEncoding[i]
     str += '  ' + IndexTypeMap.get(component)
-    if (i !== type.fullKey.length - 1) str += ',\n'
+    if (i !== type.keyEncoding.length - 1) str += ',\n'
     else str += '\n'
   }
   str += `], { prefix: ${type.id} })`
