@@ -168,7 +168,7 @@ function generateCollectionDefinition (id, collection) {
   str += `// ${s(collection.fqn)} reconstruction function\n`
   str += `function ${id}_reconstruct (version, keyBuf, valueBuf) {\n`
   str += '  // TODO: This should be fully code generated\n'
-  str += `  const key = ${id}_key.decode(keyBuf)\n`
+  if (collection.key.length) str += `  const key = ${id}_key.decode(keyBuf)\n`
   str += `  const value = c.decode(resolveStruct(${s(collection.valueEncoding)}, version), valueBuf)\n`
   str += '  return {\n'
   for (let i = 0; i < collection.key.length; i++) {
