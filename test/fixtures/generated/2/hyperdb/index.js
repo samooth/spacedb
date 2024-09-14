@@ -35,7 +35,7 @@ function collection0_reconstruct (version, keyBuf, valueBuf) {
 const collection0 = {
   name: '@db/members',
   id: 0,
-  stats: false,
+  stats: true,
   encodeKey: function encodeKey (record) {
     const key = [record.id]
     return collection0_key.encode(key)
@@ -55,11 +55,61 @@ const collection0 = {
   indexes: []
 }
 
+// 'stats' collection key
+const collection1_key = new IndexEncoder([
+  IndexEncoder.UINT
+], { prefix: 1 })
+
+function collection1_indexify (record) {
+  const arr = []
+
+  const a0 = record.id
+  if (a0 === undefined) return arr
+  arr.push(a0)
+
+  return arr
+}
+
+// 'stats' reconstruction function
+function collection1_reconstruct (version, keyBuf, valueBuf) {
+  // TODO: This should be fully code generated
+  const key = collection1_key.decode(keyBuf)
+  const value = c.decode(resolveStruct('stats/value', version), valueBuf)
+  return {
+    id: key[0],
+    ...value
+  }
+}
+
+// 'stats'
+const collection1 = {
+  name: 'stats',
+  id: 1,
+  stats: false,
+  encodeKey: function encodeKey (record) {
+    const key = [record.id]
+    return collection1_key.encode(key)
+  },
+  encodeKeyRange: function encodeKeyRange ({ gt, lt, gte, lte } = {}) {
+    return collection1_key.encodeRange({
+      gt: gt ? collection1_indexify(gt) : null,
+      lt: lt ? collection1_indexify(lt) : null,
+      gte: gte ? collection1_indexify(gte) : null,
+      lte: lte ? collection1_indexify(lte) : null
+    })
+  },
+  encodeValue: function encodeValue (version, record) {
+    return c.encode(resolveStruct('stats/value', version), record)
+  },
+  reconstruct: collection1_reconstruct,
+  indexes: []
+}
+
 // '@db/members-by-age' collection key
 const index0_key = new IndexEncoder([
   IndexEncoder.UINT,
   IndexEncoder.STRING
-], { prefix: 1 })
+], { prefix: 2 })
 
 function index0_indexify (record) {
   const arr = []
@@ -78,7 +128,7 @@ function index0_indexify (record) {
 // '@db/members-by-age'
 const index0 = {
   name: '@db/members-by-age',
-  id: 1,
+  id: 2,
   stats: false,
   encodeKeys: function encodeKeys (record) {
     const key = [record.age, record.id]
@@ -102,7 +152,8 @@ const IndexMap = new Map([
   ['@db/members-by-age', index0]
 ])
 const CollectionMap = new Map([
-  ['@db/members', collection0]
+  ['@db/members', collection0],
+  ['stats', collection1]
 ])
 const Collections = [...CollectionMap.values()]
 const Indexes = [...IndexMap.values()]
