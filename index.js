@@ -145,9 +145,11 @@ class HyperDB {
     snapshot = engine.snapshot(),
     updates = new Updates(engine.clock, [], []),
     rootInstance = null,
-    writable = true
+    writable = true,
+    context = null
   } = {}) {
     this.version = version
+    this.context = context
     this.engine = engine
     this.engineSnapshot = snapshot
     this.definition = definition
@@ -229,7 +231,8 @@ class HyperDB {
       snapshot,
       updates: this.updates.ref(),
       rootInstance,
-      writable
+      writable,
+      context: this.context
     })
   }
 
@@ -374,7 +377,7 @@ class HyperDB {
 
     for (let i = 0; i < collection.indexes.length; i++) {
       const idx = collection.indexes[i]
-      const del = idx.encodeKeys(prevDoc)
+      const del = idx.encodeKeys(prevDoc, this.context)
       const ups = []
 
       u.indexes.push(ups)
@@ -412,8 +415,8 @@ class HyperDB {
 
     for (let i = 0; i < collection.indexes.length; i++) {
       const idx = collection.indexes[i]
-      const prevKeys = prevDoc ? idx.encodeKeys(prevDoc) : []
-      const nextKeys = idx.encodeKeys(doc)
+      const prevKeys = prevDoc ? idx.encodeKeys(prevDoc, this.context) : []
+      const nextKeys = idx.encodeKeys(doc, this.context)
       const ups = []
 
       u.indexes.push(ups)
