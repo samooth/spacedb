@@ -6,4 +6,5 @@ package-lock.json
 rocks.db
 sandbox.mjs
 sandbox
+builder/output
 *.db
