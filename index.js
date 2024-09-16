@@ -6,11 +6,14 @@ const RocksEngine = require('./lib/engine/rocks')
 
 const STATS = 'stats'
 
+let compareHasDups = false
+
 class Updates {
-  constructor (clock, entries, stats) {
+  constructor (clock, tick, entries, stats) {
     this.refs = 1
     this.mutating = 0
-    this.clock = clock
+    this.tick = tick // internal tie breaker clock for same key updates
+    this.clock = clock // engine clock
     this.map = new Map(entries)
     this.stats = new Map(stats)
   }
@@ -34,7 +37,15 @@ class Updates {
     if (entries.length > 0) {
       let i = 0
       for (const [key, u] of this.map) {
-        entries[i++] = [key, { key: u.key, value: u.value, indexes: u.indexes.slice(0) }]
+        const clone = {
+          created: u.created,
+          tick: u.tick,
+          collection: u.collection,
+          key: u.key,
+          value: u.value,
+          indexes: u.indexes.slice(0)
+        }
+        entries[i++] = [key, clone]
       }
     }
 
@@ -48,7 +59,7 @@ class Updates {
     }
 
     this.refs--
-    return new Updates(this.clock, entries, stats)
+    return new Updates(this.clock, this.tick, entries, stats)
   }
 
   get (key) {
@@ -77,7 +88,14 @@ class Updates {
   }
 
   update (collection, key, value) {
-    const u = { created: false, collection, key, value, indexes: [] }
+    const u = {
+      created: false,
+      tick: this.tick++,
+      collection,
+      key,
+      value,
+      indexes: []
+    }
     this.map.set(b4a.toString(key, 'hex'), u)
     return u
   }
@@ -116,6 +134,7 @@ class Updates {
       for (const u of this.map.values()) {
         if (withinRange(range, u.key)) {
           overlay.push({
+            tick: u.tick,
             key: u.key,
             value: u.value === null ? null : [u.key, u.value]
           })
@@ -126,6 +145,7 @@ class Updates {
         for (const { key, value } of u.indexes[index.offset]) {
           if (withinRange(range, key)) {
             overlay.push({
+              tick: u.tick,
               key,
               value: value === null ? null : [u.key, u.value]
             })
@@ -134,7 +154,10 @@ class Updates {
       }
     }
 
+    compareHasDups = false
     overlay.sort(reverse ? reverseSortOverlay : sortOverlay)
+
+    if (compareHasDups === true) stripDups(overlay)
     return overlay
   }
 }
@@ -143,7 +166,7 @@ class HyperDB {
   constructor (engine, definition, {
     version = definition.version,
     snapshot = engine.snapshot(),
-    updates = new Updates(engine.clock, [], []),
+    updates = new Updates(engine.clock, 0, [], []),
     rootInstance = null,
     writable = true,
     context = null
@@ -499,11 +522,17 @@ function sortKeys (a, b) {
 }
 
 function sortOverlay (a, b) {
-  return b4a.compare(a.key, b.key)
+  const c = b4a.compare(a.key, b.key)
+  if (c !== 0) return c
+  compareHasDups = true
+  return b.tick - a.tick
 }
 
 function reverseSortOverlay (a, b) {
-  return b4a.compare(b.key, a.key)
+  const c = b4a.compare(b.key, a.key)
+  if (c !== 0) return c
+  compareHasDups = true
+  return b.tick - a.tick
 }
 
 function diffKeys (a, b) {
@@ -543,6 +572,18 @@ function diffKeys (a, b) {
   }
 
   return res
+}
+
+function stripDups (overlay) {
+  let j = 0
+
+  for (let i = 0; i < overlay.length; i++) {
+    const a = overlay[i]
+    overlay[j++] = a
+    while (i + 1 < overlay.length && b4a.equals(a.key, overlay[i + 1].key)) i++
+  }
+
+  overlay.length = j
 }
 
 module.exports = HyperDB
