@@ -23,12 +23,12 @@
     "generate-object-property": "^2.0.0",
     "generate-string": "^1.0.1",
     "hyperschema": "^0.0.18",
+    "index-encoder": "^3.2.0",
     "rocksdb-native": "^2.3.1",
     "streamx": "^2.20.0"
   },
   "devDependencies": {
     "brittle": "^3.7.0",
-    "index-encoder": "^3.2.0",
     "standard": "^17.1.0",
     "test-tmp": "^1.2.1"
   },
