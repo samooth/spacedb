@@ -125,7 +125,7 @@ module.exports = function generateCode (hyperdb) {
 function toArrowFunction (str, async) {
   let fn = genFunc()(str).toString()
   const i = fn.indexOf('(')
-  const isArrow = !fn.slice(0, i).includes('function')
+  const isArrow = !fn.slice(0, i).trim()
   fn = fn.slice(i)
   if (async) fn = 'async ' + fn
   if (isArrow) return fn
