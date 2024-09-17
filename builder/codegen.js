@@ -58,6 +58,7 @@ module.exports = function generateCode (hyperdb) {
 
   const collections = []
   const indexes = []
+
   for (let i = 0; i < hyperdb.orderedTypes.length; i++) {
     const type = hyperdb.orderedTypes[i]
     if (type.isCollection) {
@@ -72,41 +73,46 @@ module.exports = function generateCode (hyperdb) {
     str += '\n'
   }
 
-  str += 'const IndexMap = new Map([\n'
-  for (let i = 0; i < indexes.length; i++) {
-    const { id, type } = indexes[i]
-    str += `  [${s(type.fqn)}, ${id}]`
-    if (i === indexes.length - 1) str += '\n'
-    else str += ',\n'
+  str += 'const Collections = [\n'
+
+  for (let i = 0; i < collections.length; i++) {
+    str += `  ${collections[i].id + (i < collections.length - 1 ? ',' : '')}\n`
   }
-  str += '])\n'
-  str += 'const CollectionMap = new Map([\n'
+
+  str += ']\n'
+  str += '\n'
+
+  str += 'const Indexes = [\n'
+  for (let i = 0; i < indexes.length; i++) {
+    str += `  ${indexes[i].id + (i < indexes.length - 1 ? ',' : '')}\n`
+  }
+  str += ']\n'
+  str += '\n'
+
+  str += 'for (const index of Indexes) {\n'
+  str += '  index.offset = index.collection.indexes.push(index) - 1\n'
+  str += '}\n'
+  str += '\n'
+
+  str += 'function resolveCollection (name) {\n'
+  str += '  switch (name) {\n'
   for (let i = 0; i < collections.length; i++) {
     const { id, type } = collections[i]
-    str += `  [${s(type.fqn)}, ${id}]`
-    if (i === collections.length - 1) str += '\n'
-    else str += ',\n'
+    str += `    case ${s(type.fqn)}: return ${id}\n`
   }
-  str += '])\n'
-  str += 'const Collections = [...CollectionMap.values()]\n'
-  str += 'const Indexes = [...IndexMap.values()]\n'
-
-  str += 'for (const index of IndexMap.values()) {\n'
-  str += '  const collection = index.collection\n'
-  str += '  collection.indexes.push(index)\n'
-  str += '  index.offset = collection.indexes.length - 1\n'
+  str += '    default: return null\n'
+  str += '  }\n'
   str += '}\n'
   str += '\n'
 
-  str += 'function resolveCollection (fqn) {\n'
-  str += '  const coll = CollectionMap.get(fqn)\n'
-  str += '  return coll || null\n'
-  str += '}\n'
-  str += '\n'
-
-  str += 'function resolveIndex (fqn) {\n'
-  str += '  const index = IndexMap.get(fqn)\n'
-  str += '  return index || null\n'
+  str += 'function resolveIndex (name) {\n'
+  str += '  switch (name) {\n'
+  for (let i = 0; i < indexes.length; i++) {
+    const { id, type } = indexes[i]
+    str += `    case ${s(type.fqn)}: return ${id}\n`
+  }
+  str += '    default: return null\n'
+  str += '  }\n'
   str += '}\n'
   str += '\n'
 
