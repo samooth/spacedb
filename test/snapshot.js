@@ -75,3 +75,20 @@ test('snap of snap', async function (t) {
 
   await db.close()
 })
+
+test('a divergent tx should not clear the memview', async function (t) {
+  const db = await rocks(t)
+
+  await db.insert('@db/members', { id: 'someone', age: 40 })
+
+  {
+    const tx = db.transaction()
+    await db.insert('@db/members', { id: 'else', age: 50 })
+    await tx.flush()
+  }
+
+  const all = await db.find('@db/members').toArray()
+  t.is(all.length, 2)
+
+  await db.close()
+})

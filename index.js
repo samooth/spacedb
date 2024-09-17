@@ -212,6 +212,10 @@ class HyperDB {
     return this.closing !== null
   }
 
+  get autoClose () {
+    return this.rootInstance !== null && this.rootInstance !== this
+  }
+
   ready () {
     return this.engine.ready()
   }
@@ -501,7 +505,9 @@ class HyperDB {
     await this.engine.commit(this.updates)
 
     this.reload()
-    if (this.rootInstance !== this) this.rootInstance.reload()
+
+    if (this.rootInstance !== this && this.rootInstance.updated === false) this.rootInstance.reload()
+    if (this.autoClose === true) await this.close()
   }
 }
 
