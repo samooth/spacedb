@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "P2P first db",
   "main": "index.js",
-  "bin": {
-    "hyperdb": "./builder/bin.js"
-  },
   "files": [
     "index.js",
     "runtime.js",
