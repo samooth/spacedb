@@ -62,13 +62,11 @@ module.exports = function generateCode (hyperdb) {
   for (let i = 0; i < hyperdb.orderedTypes.length; i++) {
     const type = hyperdb.orderedTypes[i]
     if (type.isCollection) {
-      const id = `collection${type.id}`
-      collections.push({ id, type })
-      str += generateCollectionDefinition(id, type)
+      collections.push(type)
+      str += generateCollectionDefinition(type)
     } else if (type.isIndex) {
-      const id = `index${indexes.length}`
-      indexes.push({ id, type })
-      str += generateIndexDefinition(id, type, `collection${type.collection.id}`)
+      indexes.push(type)
+      str += generateIndexDefinition(type)
     }
     str += '\n'
   }
@@ -76,7 +74,7 @@ module.exports = function generateCode (hyperdb) {
   str += 'const Collections = [\n'
 
   for (let i = 0; i < collections.length; i++) {
-    str += `  ${collections[i].id + (i < collections.length - 1 ? ',' : '')}\n`
+    str += `  ${getId(collections[i]) + (i < collections.length - 1 ? ',' : '')}\n`
   }
 
   str += ']\n'
@@ -84,7 +82,7 @@ module.exports = function generateCode (hyperdb) {
 
   str += 'const Indexes = [\n'
   for (let i = 0; i < indexes.length; i++) {
-    str += `  ${indexes[i].id + (i < indexes.length - 1 ? ',' : '')}\n`
+    str += `  ${getId(indexes[i]) + (i < indexes.length - 1 ? ',' : '')}\n`
   }
   str += ']\n'
   str += '\n'
@@ -97,8 +95,8 @@ module.exports = function generateCode (hyperdb) {
   str += 'function resolveCollection (name) {\n'
   str += '  switch (name) {\n'
   for (let i = 0; i < collections.length; i++) {
-    const { id, type } = collections[i]
-    str += `    case ${s(type.fqn)}: return ${id}\n`
+    const type = collections[i]
+    str += `    case ${s(type.fqn)}: return ${getId(type)}\n`
   }
   str += '    default: return null\n'
   str += '  }\n'
@@ -108,8 +106,8 @@ module.exports = function generateCode (hyperdb) {
   str += 'function resolveIndex (name) {\n'
   str += '  switch (name) {\n'
   for (let i = 0; i < indexes.length; i++) {
-    const { id, type } = indexes[i]
-    str += `    case ${s(type.fqn)}: return ${id}\n`
+    const type = indexes[i]
+    str += `    case ${s(type.fqn)}: return ${getId(type)}\n`
   }
   str += '    default: return null\n'
   str += '  }\n'
@@ -127,7 +125,9 @@ module.exports = function generateCode (hyperdb) {
   return str
 }
 
-function generateCommonPrefix (id, type) {
+function generateCommonPrefix (type) {
+  const id = type.isCollection ? getId(type) : getId(type)
+
   let str = ''
 
   str += `// ${s(type.fqn)} collection key\n`
@@ -158,8 +158,10 @@ function generateCommonPrefix (id, type) {
   return str
 }
 
-function generateCollectionDefinition (id, collection) {
-  let str = generateCommonPrefix(id, collection)
+function generateCollectionDefinition (collection) {
+  const id = getId(collection)
+
+  let str = generateCommonPrefix(collection)
 
   if (collection.trigger) {
     str += `// ${s(collection.fqn)} has the following schema defined trigger\n`
@@ -188,8 +190,8 @@ function generateCollectionDefinition (id, collection) {
   str += `  id: ${collection.id},\n`
   str += `  stats: ${collection.stats},\n`
   str += `  trigger: ${collection.trigger ? id + '_trigger' : 'null'},\n`
-  str += `  encodeKey: ${generateEncodeCollectionKey(id, collection)},\n`
-  str += `  encodeKeyRange: ${generateEncodeKeyRange(id, collection)},\n`
+  str += `  encodeKey: ${generateEncodeCollectionKey(collection)},\n`
+  str += `  encodeKeyRange: ${generateEncodeKeyRange(collection)},\n`
   str += `  encodeValue: ${generateEncodeCollectionValue(collection)},\n`
   str += `  reconstruct: ${id}_reconstruct,\n`
   str += '  indexes: []\n'
@@ -197,15 +199,18 @@ function generateCollectionDefinition (id, collection) {
   return str
 }
 
-function generateIndexDefinition (id, index, collectionId) {
-  let str = generateCommonPrefix(id, index)
+function generateIndexDefinition (index) {
+  const id = getId(index)
+  const collectionId = getId(index.collection)
+
+  let str = generateCommonPrefix(index)
   str += `// ${s(index.fqn)}\n`
   str += `const ${id} = {\n`
   str += `  name: ${s(index.fqn)},\n`
   str += `  id: ${index.id},\n`
   str += `  stats: ${index.stats},\n`
-  str += `  encodeKeys: ${generateEncodeIndexKeys(id, index)},\n`
-  str += `  encodeKeyRange: ${generateEncodeKeyRange(id, index)},\n`
+  str += `  encodeKeys: ${generateEncodeIndexKeys(index)},\n`
+  str += `  encodeKeyRange: ${generateEncodeKeyRange(index)},\n`
   str += `  encodeValue: (doc) => ${id}.collection.encodeKey(doc),\n`
   str += '  reconstruct: (keyBuf, valueBuf) => valueBuf,\n'
   str += '  offset: 0,\n'
@@ -214,7 +219,9 @@ function generateIndexDefinition (id, index, collectionId) {
   return str
 }
 
-function generateEncodeKeyRange (id, index) {
+function generateEncodeKeyRange (index) {
+  const id = getId(index)
+
   let str = ''
   str += 'function encodeKeyRange ({ gt, lt, gte, lte } = {}) {\n'
   str += `    return ${id + '_key'}.encodeRange({\n`
@@ -235,10 +242,10 @@ function generateEncodeCollectionValue (collection) {
   return str
 }
 
-function generateEncodeCollectionKey (id, collection) {
-  const accessors = collection.fullKey.map(c => {
-    return c.split('.').reduce(gen, 'record')
-  })
+function generateEncodeCollectionKey (collection) {
+  const id = getId(collection)
+
+  const accessors = toProps('record', collection.fullKey)
   let str = ''
   str += 'function encodeKey (record) {\n'
   str += `    const key = [${accessors.join(', ')}]\n`
@@ -247,28 +254,32 @@ function generateEncodeCollectionKey (id, collection) {
   return str
 }
 
-function generateEncodeIndexKeys (id, index) {
+function generateEncodeIndexKeys (index) {
+  const id = getId(index)
+
   let str = ''
   str += 'function encodeKeys (record, context) {\n'
   if (index.isMapped) {
-    const accessors = index.fullKey.map(c => {
-      return c.split('.').reduce(gen, 'structKey')
-    })
+    const indexAccessors = toProps('mappedRecord', index.indexKey)
+    const recordAccessors = toProps('record', index.fullKey.slice(index.indexKey.length))
+    const accessors = indexAccessors.concat(recordAccessors)
     str += `    const mapped = ${id}_map(record, context)\n`
     str += '    const keys = new Array(mapped.length)\n'
-    str += '    for (let i = 0; i < keys.length; i++) {\n'
-    str += '      const structKey = mapped[i]\n'
+    str += '    for (let i = 0; i < mapped.length; i++) {\n'
+    str += '      const mappedRecord = mapped[i]\n'
     str += `      keys[i] = ${id + '_key'}.encode([${accessors.join(', ')}])\n`
     str += '    }\n'
     str += '    return keys\n'
   } else {
-    const accessors = index.fullKey.map(c => {
-      return c.split('.').reduce(gen, 'record')
-    })
+    const accessors = toProps('record', index.fullKey)
     str += `    return [${id + '_key'}.encode([${accessors.join(', ')}])]\n`
   }
   str += '  }'
   return str
+}
+
+function toProps (name, keys) {
+  return keys.map(c => c.split('.').reduce(gen, name))
 }
 
 function generateIndexKeyEncoding (type) {
@@ -313,4 +324,16 @@ function deintentFunction (str) {
   }
 
   return result.trimRight()
+}
+
+function getId (type) {
+  return type.isCollection ? getCollectionId(type) : getIndexId(type)
+}
+
+function getCollectionId (collection) {
+  return 'collection' + collection.id
+}
+
+function getIndexId (index) {
+  return 'index' + index.id
 }

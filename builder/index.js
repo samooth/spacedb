@@ -124,10 +124,12 @@ class Index extends DBType {
     if (!this.collection || !this.collection.isCollection) {
       throw new Error('Invalid index target: ' + description.collection)
     }
+
     this.collection.indexes.push(this)
 
     this.key = description.key
     this.fullKey = null
+    this.indexKey = null
 
     this.map = null
     if (this.isMapped) {
@@ -152,8 +154,10 @@ class Index extends DBType {
       }
     }
 
+    this.indexKey = this.fullKey.slice(0)
+
     // If the key is not unique, then the primary key should also be included
-    if (!this.unique && !this.isMapped) {
+    if (!this.unique) {
       for (let i = 0; i < this.collection.keyEncoding.length; i++) {
         this.keyEncoding.push(this.collection.keyEncoding[i])
         this.fullKey.push(this.collection.key[i])

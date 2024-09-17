@@ -108,12 +108,12 @@ const collection1 = {
 }
 
 // '@db/members-by-age' collection key
-const index0_key = new IndexEncoder([
+const index2_key = new IndexEncoder([
   IndexEncoder.UINT,
   IndexEncoder.STRING
 ], { prefix: 2 })
 
-function index0_indexify (record) {
+function index2_indexify (record) {
   const arr = []
 
   const a0 = record.age
@@ -128,50 +128,53 @@ function index0_indexify (record) {
 }
 
 // '@db/members-by-age'
-const index0 = {
+const index2 = {
   name: '@db/members-by-age',
   id: 2,
   stats: false,
   encodeKeys: function encodeKeys (record, context) {
-    return [index0_key.encode([record.age, record.id])]
+    return [index2_key.encode([record.age, record.id])]
   },
   encodeKeyRange: function encodeKeyRange ({ gt, lt, gte, lte } = {}) {
-    return index0_key.encodeRange({
-      gt: gt ? index0_indexify(gt) : null,
-      lt: lt ? index0_indexify(lt) : null,
-      gte: gte ? index0_indexify(gte) : null,
-      lte: lte ? index0_indexify(lte) : null
+    return index2_key.encodeRange({
+      gt: gt ? index2_indexify(gt) : null,
+      lt: lt ? index2_indexify(lt) : null,
+      gte: gte ? index2_indexify(gte) : null,
+      lte: lte ? index2_indexify(lte) : null
     })
   },
-  encodeValue: (doc) => index0.collection.encodeKey(doc),
+  encodeValue: (doc) => index2.collection.encodeKey(doc),
   reconstruct: (keyBuf, valueBuf) => valueBuf,
   offset: 0,
   collection: collection0
 }
 
-const IndexMap = new Map([
-  ['@db/members-by-age', index0]
-])
-const CollectionMap = new Map([
-  ['@db/members', collection0],
-  ['stats', collection1]
-])
-const Collections = [...CollectionMap.values()]
-const Indexes = [...IndexMap.values()]
-for (const index of IndexMap.values()) {
-  const collection = index.collection
-  collection.indexes.push(index)
-  index.offset = collection.indexes.length - 1
+const Collections = [
+  collection0,
+  collection1
+]
+
+const Indexes = [
+  index2
+]
+
+for (const index of Indexes) {
+  index.offset = index.collection.indexes.push(index) - 1
 }
 
-function resolveCollection (fqn) {
-  const coll = CollectionMap.get(fqn)
-  return coll || null
+function resolveCollection (name) {
+  switch (name) {
+    case '@db/members': return collection0
+    case 'stats': return collection1
+    default: return null
+  }
 }
 
-function resolveIndex (fqn) {
-  const index = IndexMap.get(fqn)
-  return index || null
+function resolveIndex (name) {
+  switch (name) {
+    case '@db/members-by-age': return index2
+    default: return null
+  }
 }
 
 module.exports = {
