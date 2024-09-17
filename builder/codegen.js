@@ -24,7 +24,6 @@ const type = contract.resolveIndex('@keet/devices-by-name')
 */
 
 const gen = require('generate-object-property')
-const genFunc = require('generate-function')
 const s = require('generate-string')
 
 const IndexTypeMap = new Map([
@@ -120,16 +119,6 @@ module.exports = function generateCode (hyperdb) {
   str += '}\n'
 
   return str
-}
-
-function toArrowFunction (str, async) {
-  let fn = genFunc()(str).toString()
-  const i = fn.indexOf('(')
-  const isArrow = !fn.slice(0, i).trim()
-  fn = fn.slice(i)
-  if (async) fn = 'async ' + fn
-  if (isArrow) return fn
-  return fn.replace('{', '=> {')
 }
 
 function generateCommonPrefix (id, type) {
@@ -286,4 +275,36 @@ function generateIndexKeyEncoding (type) {
   }
   str += `], { prefix: ${type.id} })`
   return str
+}
+
+function toArrowFunction (str, async) {
+  str = deintentFunction(str + '')
+  str = str.replace(/^\s*async\s*/gm, '')
+
+  const prefix = async ? 'async ' : ''
+  const bracket = str.indexOf('{')
+  const arrow = str.indexOf('>')
+  const isArrow = arrow > -1 && (bracket === -1 || arrow < bracket)
+
+  if (isArrow) return prefix + str.trimLeft()
+
+  const start = str.indexOf('(')
+  const end = str.lastIndexOf(')', bracket) + 1
+
+  return prefix + str.slice(start, end) + ' => ' + str.slice(bracket)
+}
+
+function deintentFunction (str) {
+  const m = str.trimRight().match(/\n(\s+)[}\]]$/m)
+  if (!m) return str
+
+  const indent = m[1]
+  let result = ''
+
+  for (const line of str.split('\n')) {
+    const t = line.trimRight()
+    result += (t.startsWith(indent) ? t.slice(indent.length) : t) + '\n'
+  }
+
+  return result.trimRight()
 }
