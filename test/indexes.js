@@ -108,17 +108,10 @@ function createExampleDB (HyperDB, Hyperschema, paths) {
     name: 'teenagers',
     collection: '@example/members',
     key: {
-      type: {
-        fields: [
-          {
-            name: 'age',
-            type: 'uint'
-          }
-        ]
-      },
+      type: 'uint',
       map (record, context) {
         if (record.age < 13 || record.age > 19) return []
-        return [{ age: record.age }]
+        return [record.age]
       }
     }
   })

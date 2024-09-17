@@ -145,6 +145,10 @@ class Index extends DBType {
         const resolvedType = this._resolveKey(this.collection.schema, component)
         this.keyEncoding.push(resolvedType.name)
       }
+    } else if (typeof this.key.type === 'string') {
+      const resolvedType = this.builder.schema.resolve(this.key.type, { aliases: false })
+      this.fullKey = [null] // null implies no name, ie primitive
+      this.keyEncoding.push(resolvedType.name)
     } else {
       this.fullKey = []
       for (const field of this.key.type.fields) {

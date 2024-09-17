@@ -143,10 +143,18 @@ function generateCommonPrefix (type) {
   str += `function ${id}_indexify (record) {\n`
   str += '  const arr = []\n'
   str += '\n'
-  for (let i = 0; i < type.fullKey.length; i++) {
+
+  // mapped types can only support ranges in the map space when non-unique
+  const len = type.isMapped ? type.indexKey.length : type.fullKey.length
+
+  for (let i = 0; i < len; i++) {
     const key = type.fullKey[i]
     const r = (a, b, i) => (i === 0) ? gen(a, b) : gen.optional(a, b)
-    str += `  const a${i} = ${key.split('.').reduce(r, 'record')}\n`
+    if (key === null) {
+      str += `  const a${i} = record\n`
+    } else {
+      str += `  const a${i} = ${key.split('.').reduce(r, 'record')}\n`
+    }
     str += `  if (a${i} === undefined) return arr\n`
     str += `  arr.push(a${i})\n`
     str += '\n'
@@ -279,7 +287,7 @@ function generateEncodeIndexKeys (index) {
 }
 
 function toProps (name, keys) {
-  return keys.map(c => c.split('.').reduce(gen, name))
+  return keys.map(c => c === null ? name : c.split('.').reduce(gen, name))
 }
 
 function generateIndexKeyEncoding (type) {
