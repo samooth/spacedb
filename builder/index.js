@@ -290,8 +290,11 @@ class Builder {
   }
 
   registerCollection (description, namespace) {
+    const fqn = getFQN(namespace, description.name)
+    // TODO: also validate this for invalid mutations if it was hydrated from JSON
+    if (this.typesByName.has(fqn)) return
+
     const collection = new Collection(this, namespace, description)
-    if (this.typesByName.has(collection.fqn)) return
 
     this.orderedTypes.push(collection)
     this.typesByName.set(collection.fqn, collection)
@@ -300,8 +303,11 @@ class Builder {
   }
 
   registerIndex (description, namespace) {
+    const fqn = getFQN(namespace, description.name)
+    // TODO: also validate this for invalid mutations if it was hydrated from JSON
+    if (this.typesByName.has(fqn)) return
+
     const index = new Index(this, namespace, description)
-    if (this.typesByName.has(index.fqn)) return
 
     this.orderedTypes.push(index)
     this.typesByName.set(index.fqn, index)
