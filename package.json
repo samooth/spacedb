@@ -21,7 +21,7 @@
     "compact-encoding": "^2.15.0",
     "generate-object-property": "^2.0.0",
     "generate-string": "^1.0.1",
-    "hyperschema": "^0.0.18",
+    "hyperschema": "^1.0.0",
     "index-encoder": "^3.2.0",
     "rocksdb-native": "^2.3.1",
     "streamx": "^2.20.0"

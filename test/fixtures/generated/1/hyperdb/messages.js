@@ -49,14 +49,16 @@ const encoding1 = {
   }
 }
 
-const StructMap = new Map([
-  ['@db/member', encoding0],
-  ['@db/members/value', encoding1]
-])
+function getStructByName (name) {
+  switch (name) {
+    case '@db/member': return encoding0
+    case '@db/members/value': return encoding1
+    default: throw new Error('Encoder not found ' + name)
+  }
+}
 
 function resolveStruct (name, v = VERSION) {
-  const enc = StructMap.get(name)
-  if (!enc) throw new Error('Encoder not found' + name)
+  const enc = getStructByName(name)
   return {
     preencode (state, m) {
       version = v
