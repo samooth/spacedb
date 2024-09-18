@@ -124,7 +124,7 @@ class Updates {
     return info
   }
 
-  overlay (range, index, reverse) {
+  overlay (collection, range, index, reverse) {
     const overlay = []
 
     // 99% of all reads
@@ -132,6 +132,7 @@ class Updates {
 
     if (index === null) {
       for (const u of this.map.values()) {
+        if (u.collection !== collection) continue
         if (withinRange(range, u.key)) {
           overlay.push({
             tick: u.tick,
@@ -142,6 +143,7 @@ class Updates {
       }
     } else {
       for (const u of this.map.values()) {
+        if (u.collection !== collection) continue
         for (const { key, value } of u.indexes[index.offset]) {
           if (withinRange(range, key)) {
             overlay.push({
@@ -299,7 +301,7 @@ class HyperDB {
 
     const engine = this.engine
     const snap = this.engineSnapshot
-    const overlay = this.updates.overlay(range, index, reverse)
+    const overlay = this.updates.overlay(collection, range, index, reverse)
     const stream = engine.createReadStream(snap, range, { reverse, limit })
 
     return new IndexStream(stream, {
