@@ -1,9 +1,9 @@
-const HyperDB = require('../../../../builder')
+const HyperDB = require('../../../builder')
 const Hyperschema = require('hyperschema')
 const path = require('path')
 
-const SCHEMA_DIR = path.join(__dirname, 'hyperschema')
-const DB_DIR = path.join(__dirname, 'hyperdb')
+const SCHEMA_DIR = path.join(__dirname, '../generated/2/hyperschema')
+const DB_DIR = path.join(__dirname, '../generated/2/hyperdb')
 
 const schema = Hyperschema.from(SCHEMA_DIR)
 
@@ -32,6 +32,7 @@ const testDb = db.namespace('db')
 
 testDb.collections.register({
   name: 'members',
+  stats: true,
   schema: '@db/member',
   key: ['id']
 })

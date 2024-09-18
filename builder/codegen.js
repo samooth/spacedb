@@ -72,25 +72,22 @@ module.exports = function generateCode (hyperdb) {
     str += '\n'
   }
 
-  str += 'const Collections = [\n'
-
+  str += 'module.exports = {\n'
+  str += '  version,\n'
+  str += '  collections: [\n'
   for (let i = 0; i < collections.length; i++) {
-    str += `  ${getId(collections[i]) + (i < collections.length - 1 ? ',' : '')}\n`
+    str += `    ${getId(collections[i]) + (i < collections.length - 1 ? ',' : '')}\n`
   }
-
-  str += ']\n'
-  str += '\n'
-
-  str += 'const Indexes = [\n'
+  str += '  ],\n'
+  str += '  indexes: [\n'
   for (let i = 0; i < indexes.length; i++) {
-    str += `  ${getId(indexes[i]) + (i < indexes.length - 1 ? ',' : '')}\n`
+    str += `    ${getId(indexes[i]) + (i < indexes.length - 1 ? ',' : '')}\n`
   }
-  str += ']\n'
-  str += '\n'
-
-  str += 'for (const index of Indexes) {\n'
-  str += '  index.offset = index.collection.indexes.push(index) - 1\n'
+  str += '  ],\n'
+  str += '  resolveCollection,\n'
+  str += '  resolveIndex\n'
   str += '}\n'
+
   str += '\n'
 
   str += 'function resolveCollection (name) {\n'
@@ -112,15 +109,6 @@ module.exports = function generateCode (hyperdb) {
   }
   str += '    default: return null\n'
   str += '  }\n'
-  str += '}\n'
-  str += '\n'
-
-  str += 'module.exports = {\n'
-  str += '  version,\n'
-  str += '  collections: Collections,\n'
-  str += '  indexes: Indexes,\n'
-  str += '  resolveCollection,\n'
-  str += '  resolveIndex\n'
   str += '}\n'
 
   return str
@@ -180,16 +168,20 @@ function generateCollectionDefinition (collection) {
 
   str += `// ${s(collection.fqn)} reconstruction function\n`
   str += `function ${id}_reconstruct (version, keyBuf, valueBuf) {\n`
-  str += '  // TODO: This should be fully code generated\n'
   if (collection.key.length) str += `  const key = ${id}_key.decode(keyBuf)\n`
   str += `  const value = c.decode(resolveStruct(${s(collection.valueEncoding)}, version), valueBuf)\n`
-  str += '  return {\n'
-  for (let i = 0; i < collection.key.length; i++) {
-    const key = collection.key[i]
-    str += `    ${gen.property(key)}: key[${i}],\n`
+  if (collection.key.length === 0) {
+    str += '  return value\n'
+  } else {
+    str += '  // TODO: This should be fully code generated\n'
+    str += '  return {\n'
+    for (let i = 0; i < collection.key.length; i++) {
+      const key = collection.key[i]
+      str += `    ${gen.property(key)}: key[${i}],\n`
+    }
+    str += '    ...value\n'
+    str += '  }\n'
   }
-  str += '    ...value\n'
-  str += '  }\n'
   str += '}\n'
 
   str += '\n'
@@ -222,9 +214,10 @@ function generateIndexDefinition (index) {
   str += `  encodeKeyRange: ${generateEncodeKeyRange(index)},\n`
   str += `  encodeValue: (doc) => ${id}.collection.encodeKey(doc),\n`
   str += '  reconstruct: (keyBuf, valueBuf) => valueBuf,\n'
-  str += '  offset: 0,\n'
+  str += `  offset: ${collectionId}.indexes.length,\n`
   str += `  collection: ${collectionId}\n`
   str += '}\n'
+  str += `${collectionId}.indexes.push(${id})\n`
   return str
 }
 
