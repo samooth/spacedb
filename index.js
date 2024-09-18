@@ -318,7 +318,7 @@ class HyperDB {
     }
 
     function map (entries) {
-      return engine.getIndirectRange(snap, entries)
+      return engine.getIndirectRange(snap, index.reconstruct, entries)
     }
   }
 
