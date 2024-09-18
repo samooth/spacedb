@@ -248,7 +248,7 @@ class HyperDB {
     this.rootInstance = null
   }
 
-  _createSnapshot (rootInstance, writable) {
+  _createSnapshot (rootInstance, writable, context) {
     const snapshot = this.engineSnapshot === null
       ? this.engine.snapshot()
       : this.engineSnapshot.ref()
@@ -259,20 +259,22 @@ class HyperDB {
       updates: this.updates.ref(),
       rootInstance,
       writable,
-      context: this.context
+      context
     })
   }
 
-  snapshot () {
-    return this._createSnapshot(null, false)
+  snapshot (options) {
+    const context = (options && options.context) || this.context
+    return this._createSnapshot(null, false, context)
   }
 
-  transaction () {
+  transaction (options) {
     if (this.rootInstance !== this) {
       throw new Error('Can only make transactions on main instance')
     }
 
-    return this._createSnapshot(this, true)
+    const context = (options && options.context) || this.context
+    return this._createSnapshot(this, true, context)
   }
 
   find (indexName, query = {}, options) {
