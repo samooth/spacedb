@@ -11,7 +11,7 @@
   ],
   "scripts": {
     "test": "standard && brittle test/*.js",
-    "generate": "node test/fixtures/generate.js"
+    "generate": "rm -rf test/fixtures/generated && node test/fixtures/generate.js"
   },
   "dependencies": {
     "b4a": "^1.6.6",

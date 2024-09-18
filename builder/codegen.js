@@ -130,25 +130,29 @@ function generateCommonPrefix (type) {
   }
 
   str += `function ${id}_indexify (record) {\n`
-  str += '  const arr = []\n'
-  str += '\n'
 
   // mapped types can only support ranges in the map space when non-unique
   const len = type.isMapped ? type.indexKey.length : type.fullKey.length
 
-  for (let i = 0; i < len; i++) {
-    const key = type.fullKey[i]
-    const r = (a, b, i) => (i === 0) ? gen(a, b) : gen.optional(a, b)
-    if (key === null) {
-      str += `  const a${i} = record\n`
-    } else {
-      str += `  const a${i} = ${key.split('.').reduce(r, 'record')}\n`
-    }
-    str += `  if (a${i} === undefined) return arr\n`
-    str += `  arr.push(a${i})\n`
+  if (len === 0) {
+    str += '  return []\n'
+  } else if (len === 1) {
+    str += `  const a = ${getKeyPath(type.fullKey[0], 'record')}\n`
+    str += '  return a === undefined ? [] : [a]\n'
+  } else {
+    str += '  const arr = []\n'
     str += '\n'
+
+    for (let i = 0; i < len; i++) {
+      const key = type.fullKey[i]
+      str += `  const a${i} = ${getKeyPath(key, 'record')}\n`
+      str += `  if (a${i} === undefined) return arr\n`
+      str += `  arr.push(a${i})\n`
+      str += '\n'
+    }
+    str += '  return arr\n'
   }
-  str += '  return arr\n'
+
   str += '}\n'
   str += '\n'
 
@@ -349,4 +353,10 @@ function getCollectionId (collection) {
 
 function getIndexId (index) {
   return 'index' + index.id
+}
+
+function getKeyPath (key, name) {
+  if (key === null) return name
+  const r = (a, b, i) => (i === 0) ? gen(a, b) : gen.optional(a, b)
+  return key.split('.').reduce(r, 'record')
 }

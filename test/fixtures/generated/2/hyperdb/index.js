@@ -11,13 +11,8 @@ const collection0_key = new IndexEncoder([
 ], { prefix: 0 })
 
 function collection0_indexify (record) {
-  const arr = []
-
-  const a0 = record.id
-  if (a0 === undefined) return arr
-  arr.push(a0)
-
-  return arr
+  const a = record.id
+  return a === undefined ? [] : [a]
 }
 
 // '@db/members' reconstruction function
@@ -62,13 +57,8 @@ const collection1_key = new IndexEncoder([
 ], { prefix: 1 })
 
 function collection1_indexify (record) {
-  const arr = []
-
-  const a0 = record.id
-  if (a0 === undefined) return arr
-  arr.push(a0)
-
-  return arr
+  const a = record.id
+  return a === undefined ? [] : [a]
 }
 
 // 'stats' reconstruction function
