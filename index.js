@@ -67,6 +67,23 @@ class Updates {
     return u === undefined ? null : u
   }
 
+  getIndex (index, key) {
+    // 99% of all reads
+    if (this.map.size === 0) return null
+
+    for (const u of this.map.values()) {
+      if (u.collection !== index.collection) continue
+
+      const ups = u.indexes[index.offset]
+
+      for (let i = 0; i < ups.length; i++) {
+        if (b4a.equals(key, ups[i].key)) return u
+      }
+    }
+
+    return null
+  }
+
   flush (clock) {
     this.clock = clock
     this.stats.clear()
@@ -326,18 +343,40 @@ class HyperDB {
     return this.find(indexName, query, { ...options, limit: 1 }).one()
   }
 
-  async get (collectionName, doc) {
-    maybeClosed(this)
+  get (collectionName, doc) {
+    const snap = this.engineSnapshot
 
     const collection = this.definition.resolveCollection(collectionName)
-    if (collection === null) return null
+    if (collection !== null) return this._getCollection(collection, snap, doc)
+
+    const index = this.definition.resolveIndex(collectionName)
+    if (index !== null) return this._getIndex(index, snap, doc)
+
+    return null
+  }
+
+  async _getCollection (collection, snap, doc) {
+    maybeClosed(this)
 
     const key = b4a.isBuffer(doc) ? doc : collection.encodeKey(doc)
 
     const u = this.updates.get(key)
-    const value = u !== null ? u.value : await this.engine.get(this.engineSnapshot, key)
+    const value = u !== null ? u.value : await this.engine.get(snap, key)
 
     return value === null ? null : collection.reconstruct(this.version, key, value)
+  }
+
+  async _getIndex (index, snap, doc) {
+    maybeClosed(this)
+
+    const key = b4a.isBuffer(doc) ? doc : getFirst(index.encodeKeys(doc, this.context))
+    if (key === null) return null
+
+    const u = this.updates.getIndex(index, key)
+    if (u !== null) return index.collection.reconstruct(this.version, u.key, u.value)
+
+    const value = await this.engine.get(snap, key)
+    return this._getCollection(index.collection, snap, index.reconstruct(key, value))
   }
 
   async stats (indexName) {
@@ -582,6 +621,10 @@ function diffKeys (a, b) {
   }
 
   return res
+}
+
+function getFirst (arr) {
+  return arr.length === 0 ? null : arr[0]
 }
 
 function stripDups (overlay) {

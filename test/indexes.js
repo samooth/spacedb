@@ -64,6 +64,27 @@ test('two collections work with indexes', async function (t) {
   await db.close()
 })
 
+test('get on an index', async function (t) {
+  const db = await build(t, createExampleDB)
+
+  const expected = { name: 'test', age: 10 }
+  await db.insert('@example/members', expected)
+
+  {
+    const doc = await db.get('@example/members-by-name', { name: 'test' })
+    t.alike(doc, expected)
+  }
+
+  await db.flush()
+
+  {
+    const doc = await db.get('@example/members-by-name', { name: 'test' })
+    t.alike(doc, expected)
+  }
+
+  await db.close()
+})
+
 function createExampleDB (HyperDB, Hyperschema, paths) {
   const schema = Hyperschema.from(paths.schema)
   const example = schema.namespace('example')
