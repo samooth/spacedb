@@ -53,6 +53,17 @@ test('members with non-unique index', async function (t) {
   await db.close()
 })
 
+test('two collections work with indexes', async function (t) {
+  const db = await build(t, createExampleDB)
+  await db.insert('@example/members', { name: 'test', age: 10 })
+  await db.insert('@example/devices', { key: 'device-1', name: 'my device' })
+
+  const all = await db.find('@example/members-by-name').toArray()
+  t.is(all.length, 1)
+
+  await db.close()
+})
+
 function createExampleDB (HyperDB, Hyperschema, paths) {
   const schema = Hyperschema.from(paths.schema)
   const example = schema.namespace('example')
@@ -73,10 +84,31 @@ function createExampleDB (HyperDB, Hyperschema, paths) {
     ]
   })
 
+  example.register({
+    name: 'devices',
+    fields: [
+      {
+        name: 'key',
+        type: 'string',
+        required: true
+      },
+      {
+        name: 'name',
+        type: 'string'
+      }
+    ]
+  })
+
   Hyperschema.toDisk(schema)
 
   const db = HyperDB.from(paths.schema, paths.db)
   const exampleDB = db.namespace('example')
+
+  exampleDB.collections.register({
+    name: 'devices',
+    schema: '@example/devices',
+    key: ['key']
+  })
 
   exampleDB.collections.register({
     name: 'members',
