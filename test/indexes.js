@@ -76,6 +76,11 @@ test('get on an index', async function (t) {
   }
 
   {
+    const doc = await db.get('@example/last-teenager', 13)
+    t.is(doc, null)
+  }
+
+  {
     const doc = await db.get('@example/members-by-name', 'test')
     t.alike(doc, expected)
   }
@@ -85,6 +90,11 @@ test('get on an index', async function (t) {
   {
     const doc = await db.get('@example/last-teenager', 15)
     t.alike(doc, expected)
+  }
+
+  {
+    const doc = await db.get('@example/last-teenager', 13)
+    t.is(doc, null)
   }
 
   {

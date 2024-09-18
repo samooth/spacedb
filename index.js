@@ -386,6 +386,8 @@ class HyperDB {
     if (u !== null) return index.collection.reconstruct(this.version, u.key, u.value)
 
     const value = await this.engine.get(snap, key)
+    if (value === null) return null
+
     return this._getCollection(index.collection, snap, index.reconstruct(key, value))
   }
 
