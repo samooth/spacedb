@@ -366,6 +366,8 @@ class HyperDB {
   async _getCollection (collection, snap, doc) {
     maybeClosed(this)
 
+    // we allow passing the raw primary key here cause thats what the trigger passes for simplicity
+    // you shouldnt rely on that.
     const key = b4a.isBuffer(doc) ? doc : collection.encodeKey(doc)
 
     const u = this.updates.get(key)
@@ -377,7 +379,7 @@ class HyperDB {
   async _getIndex (index, snap, doc) {
     maybeClosed(this)
 
-    const key = b4a.isBuffer(doc) ? doc : getFirst(index.encodeKeys(doc, this.context))
+    const key = index.encodeKey(doc, this.context)
     if (key === null) return null
 
     const u = this.updates.getIndex(index, key)
@@ -461,7 +463,7 @@ class HyperDB {
 
     for (let i = 0; i < collection.indexes.length; i++) {
       const idx = collection.indexes[i]
-      const del = idx.encodeKeys(prevDoc, this.context)
+      const del = idx.encodeIndexKeys(prevDoc, this.context)
       const ups = []
 
       u.indexes.push(ups)
@@ -500,8 +502,8 @@ class HyperDB {
 
     for (let i = 0; i < collection.indexes.length; i++) {
       const idx = collection.indexes[i]
-      const prevKeys = prevDoc ? idx.encodeKeys(prevDoc, this.context) : []
-      const nextKeys = idx.encodeKeys(doc, this.context)
+      const prevKeys = prevDoc ? idx.encodeIndexKeys(prevDoc, this.context) : []
+      const nextKeys = idx.encodeIndexKeys(doc, this.context)
       const ups = []
 
       u.indexes.push(ups)
@@ -629,10 +631,6 @@ function diffKeys (a, b) {
   }
 
   return res
-}
-
-function getFirst (arr) {
-  return arr.length === 0 ? null : arr[0]
 }
 
 function stripDups (overlay) {

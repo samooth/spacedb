@@ -71,24 +71,24 @@ test('get on an index', async function (t) {
   await db.insert('@example/members', expected)
 
   {
-    const doc = await db.get('@example/teenagers', { name: 'test', age: 15 })
+    const doc = await db.get('@example/last-teenager', 15)
     t.alike(doc, expected)
   }
 
   {
-    const doc = await db.get('@example/members-by-name', { name: 'test' })
+    const doc = await db.get('@example/members-by-name', 'test')
     t.alike(doc, expected)
   }
 
   await db.flush()
 
   {
-    const doc = await db.get('@example/teenagers', { name: 'test', age: 15 })
+    const doc = await db.get('@example/last-teenager', 15)
     t.alike(doc, expected)
   }
 
   {
-    const doc = await db.get('@example/members-by-name', { name: 'test' })
+    const doc = await db.get('@example/members-by-name', 'test')
     t.alike(doc, expected)
   }
 
@@ -152,14 +152,7 @@ function createExampleDB (HyperDB, Hyperschema, paths) {
     collection: '@example/members',
     unique: true,
     key: {
-      type: {
-        fields: [
-          {
-            name: 'name',
-            type: 'string'
-          }
-        ]
-      },
+      type: 'string',
       map (record, context) {
         const name = record.name.toLowerCase().trim()
         return name ? [name] : []
@@ -170,6 +163,19 @@ function createExampleDB (HyperDB, Hyperschema, paths) {
   exampleDB.indexes.register({
     name: 'teenagers',
     collection: '@example/members',
+    key: {
+      type: 'uint',
+      map (record, context) {
+        if (record.age < 13 || record.age > 19) return []
+        return [record.age]
+      }
+    }
+  })
+
+  exampleDB.indexes.register({
+    name: 'last-teenager',
+    collection: '@example/members',
+    unique: true,
     key: {
       type: 'uint',
       map (record, context) {

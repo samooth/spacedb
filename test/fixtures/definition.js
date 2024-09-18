@@ -45,7 +45,10 @@ const membersByAgeIndex = {
   offset: 0,
   stats: false,
   id: 1,
-  encodeKeys (doc) {
+  encodeKey (doc) {
+    return memberByAge.encode([doc.age, doc.id])
+  },
+  encodeIndexKeys (doc) {
     return [memberByAge.encode([doc.age, doc.id])]
   },
   encodeKeyRange (range) {

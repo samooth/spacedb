@@ -36,7 +36,6 @@ const collection0 = {
   name: '@db/members',
   id: 0,
   stats: true,
-  trigger: null,
   encodeKey: function encodeKey (record) {
     const key = [record.id]
     return collection0_key.encode(key)
@@ -52,6 +51,7 @@ const collection0 = {
   encodeValue: function encodeValue (version, record) {
     return c.encode(resolveStruct('@db/members/value', version), record)
   },
+  trigger: null,
   reconstruct: collection0_reconstruct,
   indexes: []
 }
@@ -87,7 +87,6 @@ const collection1 = {
   name: 'stats',
   id: 1,
   stats: false,
-  trigger: null,
   encodeKey: function encodeKey (record) {
     const key = [record.id]
     return collection1_key.encode(key)
@@ -103,6 +102,7 @@ const collection1 = {
   encodeValue: function encodeValue (version, record) {
     return c.encode(resolveStruct('stats/value', version), record)
   },
+  trigger: null,
   reconstruct: collection1_reconstruct,
   indexes: []
 }
@@ -132,8 +132,8 @@ const index2 = {
   name: '@db/members-by-age',
   id: 2,
   stats: false,
-  encodeKeys: function encodeKeys (record, context) {
-    return [index2_key.encode([record.age, record.id])]
+  encodeKey: function encodeKey (record) {
+    return index2_key.encode(index2_indexify(record))
   },
   encodeKeyRange: function encodeKeyRange ({ gt, lt, gte, lte } = {}) {
     return index2_key.encodeRange({
@@ -144,6 +144,9 @@ const index2 = {
     })
   },
   encodeValue: (doc) => index2.collection.encodeKey(doc),
+  encodeIndexKeys: function encodeKeys (record, context) {
+    return [index2_key.encode([record.age, record.id])]
+  },
   reconstruct: (keyBuf, valueBuf) => valueBuf,
   offset: collection0.indexes.length,
   collection: collection0

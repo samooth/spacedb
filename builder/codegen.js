@@ -190,10 +190,10 @@ function generateCollectionDefinition (collection) {
   str += `  name: ${s(collection.fqn)},\n`
   str += `  id: ${collection.id},\n`
   str += `  stats: ${collection.stats},\n`
-  str += `  trigger: ${collection.trigger ? id + '_trigger' : 'null'},\n`
   str += `  encodeKey: ${generateEncodeCollectionKey(collection)},\n`
   str += `  encodeKeyRange: ${generateEncodeKeyRange(collection)},\n`
   str += `  encodeValue: ${generateEncodeCollectionValue(collection)},\n`
+  str += `  trigger: ${collection.trigger ? id + '_trigger' : 'null'},\n`
   str += `  reconstruct: ${id}_reconstruct,\n`
   str += '  indexes: []\n'
   str += '}\n'
@@ -210,9 +210,10 @@ function generateIndexDefinition (index) {
   str += `  name: ${s(index.fqn)},\n`
   str += `  id: ${index.id},\n`
   str += `  stats: ${index.stats},\n`
-  str += `  encodeKeys: ${generateEncodeIndexKeys(index)},\n`
+  str += `  encodeKey: ${generateEncodeIndexKey(index)},\n`
   str += `  encodeKeyRange: ${generateEncodeKeyRange(index)},\n`
   str += `  encodeValue: (doc) => ${id}.collection.encodeKey(doc),\n`
+  str += `  encodeIndexKeys: ${generateEncodeIndexKeys(index)},\n`
   str += '  reconstruct: (keyBuf, valueBuf) => valueBuf,\n'
   str += `  offset: ${collectionId}.indexes.length,\n`
   str += `  collection: ${collectionId}\n`
@@ -276,6 +277,16 @@ function generateEncodeIndexKeys (index) {
     const accessors = toProps('record', index.fullKey)
     str += `    return [${id + '_key'}.encode([${accessors.join(', ')}])]\n`
   }
+  str += '  }'
+  return str
+}
+
+function generateEncodeIndexKey (index) {
+  const id = getId(index)
+
+  let str = ''
+  str += 'function encodeKey (record) {\n'
+  str += `    return ${id}_key.encode(${id}_indexify(record))\n`
   str += '  }'
   return str
 }
