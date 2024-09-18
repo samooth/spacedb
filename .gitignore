@@ -7,5 +7,5 @@ rocks.db
 sandbox.mjs
 sandbox
 builder/output
-fixtures/tmp
+test/fixtures/tmp
 *.db
