@@ -67,8 +67,13 @@ test('two collections work with indexes', async function (t) {
 test('get on an index', async function (t) {
   const db = await build(t, createExampleDB)
 
-  const expected = { name: 'test', age: 10 }
+  const expected = { name: 'test', age: 15 }
   await db.insert('@example/members', expected)
+
+  {
+    const doc = await db.get('@example/teenagers', { name: 'test', age: 15 })
+    t.alike(doc, expected)
+  }
 
   {
     const doc = await db.get('@example/members-by-name', { name: 'test' })
@@ -76,6 +81,11 @@ test('get on an index', async function (t) {
   }
 
   await db.flush()
+
+  {
+    const doc = await db.get('@example/teenagers', { name: 'test', age: 15 })
+    t.alike(doc, expected)
+  }
 
   {
     const doc = await db.get('@example/members-by-name', { name: 'test' })
