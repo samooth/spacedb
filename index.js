@@ -141,43 +141,48 @@ class Updates {
     return info
   }
 
-  overlay (collection, range, index, reverse) {
+  collectionOverlay (collection, range, reverse) {
     const overlay = []
 
     // 99% of all reads
     if (this.map.size === 0) return overlay
 
-    if (index === null) {
-      for (const u of this.map.values()) {
-        if (u.collection !== collection) continue
-        if (withinRange(range, u.key)) {
+    for (const u of this.map.values()) {
+      if (u.collection !== collection) continue
+      if (withinRange(range, u.key)) {
+        overlay.push({
+          tick: u.tick,
+          key: u.key,
+          value: u.value === null ? null : [u.key, u.value]
+        })
+      }
+    }
+
+    return sortOverlay(overlay, reverse)
+  }
+
+  indexOverlay (index, range, reverse) {
+    const overlay = []
+
+    // 99% of all reads
+    if (this.map.size === 0) return overlay
+
+    const collection = index.collection
+
+    for (const u of this.map.values()) {
+      if (u.collection !== collection) continue
+      for (const { key, value } of u.indexes[index.offset]) {
+        if (withinRange(range, key)) {
           overlay.push({
             tick: u.tick,
-            key: u.key,
-            value: u.value === null ? null : [u.key, u.value]
+            key,
+            value: value === null ? null : [u.key, u.value]
           })
-        }
-      }
-    } else {
-      for (const u of this.map.values()) {
-        if (u.collection !== collection) continue
-        for (const { key, value } of u.indexes[index.offset]) {
-          if (withinRange(range, key)) {
-            overlay.push({
-              tick: u.tick,
-              key,
-              value: value === null ? null : [u.key, u.value]
-            })
-          }
         }
       }
     }
 
-    compareHasDups = false
-    overlay.sort(reverse ? reverseSortOverlay : sortOverlay)
-
-    if (compareHasDups === true) stripDups(overlay)
-    return overlay
+    return sortOverlay(overlay, reverse)
   }
 }
 
@@ -316,9 +321,12 @@ class HyperDB {
       ? collection.encodeKeyRange(query)
       : index.encodeKeyRange(query)
 
+    const overlay = index === null
+      ? this.updates.collectionOverlay(collection, range, reverse)
+      : this.updates.indexOverlay(index, range, reverse)
+
     const engine = this.engine
     const snap = this.engineSnapshot
-    const overlay = this.updates.overlay(collection, range, index, reverse)
     const stream = engine.createReadStream(snap, range, { reverse, limit })
 
     return new IndexStream(stream, {
@@ -570,14 +578,14 @@ function sortKeys (a, b) {
   return b4a.compare(a, b)
 }
 
-function sortOverlay (a, b) {
+function compareOverlay (a, b) {
   const c = b4a.compare(a.key, b.key)
   if (c !== 0) return c
   compareHasDups = true
   return b.tick - a.tick
 }
 
-function reverseSortOverlay (a, b) {
+function reverseCompareOverlay (a, b) {
   const c = b4a.compare(b.key, a.key)
   if (c !== 0) return c
   compareHasDups = true
@@ -637,6 +645,13 @@ function stripDups (overlay) {
   }
 
   overlay.length = j
+}
+
+function sortOverlay (overlay, reverse) {
+  compareHasDups = false
+  overlay.sort(reverse ? reverseCompareOverlay : compareOverlay)
+  if (compareHasDups === true) stripDups(overlay)
+  return overlay
 }
 
 module.exports = HyperDB
