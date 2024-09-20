@@ -3,6 +3,7 @@ const b4a = require('b4a')
 
 // engines
 const RocksEngine = require('./lib/engine/rocks')
+const BeeEngine = require('./lib/engine/bee')
 
 const STATS = 'stats'
 
@@ -216,8 +217,8 @@ class HyperDB {
     return new HyperDB(new RocksEngine(storage), definition, options)
   }
 
-  static bee (bee, definition, options) {
-    throw new Error('TODO')
+  static bee (core, definition, options) {
+    return new HyperDB(new BeeEngine(core), definition, options)
   }
 
   get closed () {

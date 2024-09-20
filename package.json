@@ -18,6 +18,7 @@
     "compact-encoding": "^2.15.0",
     "generate-object-property": "^2.0.0",
     "generate-string": "^1.0.1",
+    "hyperbee": "^2.20.1",
     "hyperschema": "^1.0.0",
     "index-encoder": "^3.2.0",
     "rocksdb-native": "^2.3.1",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "brittle": "^3.7.0",
+    "hypercore": "^10.37.22",
     "standard": "^17.1.0",
     "test-tmp": "^1.2.1"
   },
