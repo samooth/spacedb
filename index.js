@@ -315,7 +315,6 @@ class HyperDB {
 
     const limit = query.limit
     const reverse = !!query.reverse
-    const version = query.version === 0 ? 0 : (query.version || this.version)
 
     const range = index === null
       ? collection.encodeKeyRange(query)
@@ -325,26 +324,13 @@ class HyperDB {
       ? this.updates.collectionOverlay(collection, range, reverse)
       : this.updates.indexOverlay(index, range, reverse)
 
-    const engine = this.engine
-    const snap = this.engineSnapshot
-    const stream = engine.createReadStream(snap, range, { reverse, limit })
-
-    return new IndexStream(stream, {
-      asap: engine.asap,
-      decode,
+    return new IndexStream(this, range, {
+      index,
+      collection,
       reverse,
       limit,
-      overlay,
-      map: index === null ? null : map
+      overlay
     })
-
-    function decode (key, value) {
-      return collection.reconstruct(version, key, value)
-    }
-
-    function map (entries) {
-      return engine.getIndirectRange(snap, index.reconstruct, entries)
-    }
   }
 
   async findOne (indexName, query, options) {
