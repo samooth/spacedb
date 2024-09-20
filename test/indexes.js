@@ -1,8 +1,7 @@
-const test = require('brittle')
-const { build } = require('./helpers')
+const { test } = require('./helpers')
 
-test('members with unique index', async function (t) {
-  const db = await build(t, createExampleDB)
+test('members with unique index', async function ({ build }, t) {
+  const db = await build(createExampleDB)
 
   await db.insert('@example/members', { name: 'test', age: 10 })
   await db.insert('@example/members', { name: 'Test', age: 11 })
@@ -22,8 +21,8 @@ test('members with unique index', async function (t) {
   await db.close()
 })
 
-test('members with non-unique index', async function (t) {
-  const db = await build(t, createExampleDB)
+test('members with non-unique index', async function ({ build }, t) {
+  const db = await build(createExampleDB)
 
   await db.insert('@example/members', { name: 'test', age: 10 })
   await db.insert('@example/members', { name: 'john', age: 14 })
@@ -53,8 +52,9 @@ test('members with non-unique index', async function (t) {
   await db.close()
 })
 
-test('two collections work with indexes', async function (t) {
-  const db = await build(t, createExampleDB)
+test('two collections work with indexes', async function ({ build }, t) {
+  const db = await build(createExampleDB)
+
   await db.insert('@example/members', { name: 'test', age: 10 })
   await db.insert('@example/devices', { key: 'device-1', name: 'my device' })
 
@@ -64,8 +64,8 @@ test('two collections work with indexes', async function (t) {
   await db.close()
 })
 
-test('get on an index', async function (t) {
-  const db = await build(t, createExampleDB)
+test('get on an index', async function ({ build }, t) {
+  const db = await build(createExampleDB)
 
   const expected = { name: 'test', age: 15 }
   await db.insert('@example/members', expected)

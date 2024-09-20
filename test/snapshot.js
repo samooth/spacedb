@@ -1,8 +1,7 @@
-const test = require('brittle')
-const { rocks } = require('./helpers')
+const { test } = require('./helpers')
 
-test('basic snapshot', async function (t) {
-  const db = await rocks(t)
+test('basic snapshot', async function ({ create }, t) {
+  const db = await create()
 
   const empty = db.snapshot()
 
@@ -46,8 +45,8 @@ test('basic snapshot', async function (t) {
   await snap.close()
 })
 
-test('snap of snap', async function (t) {
-  const db = await rocks(t)
+test('snap of snap', async function ({ create }, t) {
+  const db = await create()
 
   await db.insert('@db/members', { id: 'someone', age: 40 })
   await db.insert('@db/members', { id: 'else', age: 50 })
@@ -76,8 +75,8 @@ test('snap of snap', async function (t) {
   await db.close()
 })
 
-test('a divergent tx should not clear the memview', async function (t) {
-  const db = await rocks(t)
+test('a divergent tx should not clear the memview', async function ({ create }, t) {
+  const db = await create()
 
   await db.insert('@db/members', { id: 'someone', age: 40 })
 
