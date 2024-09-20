@@ -221,6 +221,10 @@ class HyperDB {
     return new HyperDB(new BeeEngine(core), definition, options)
   }
 
+  get db () {
+    return this.engine.db
+  }
+
   get closed () {
     return this.engine === null
   }
