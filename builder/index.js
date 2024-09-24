@@ -106,7 +106,8 @@ class Collection extends DBType {
       indexes: this.indexes.map(i => i.fqn),
       schema: this.schema.fqn,
       derived: this.derived,
-      key: this.key
+      key: this.key,
+      trigger: this.trigger
     }
   }
 }
