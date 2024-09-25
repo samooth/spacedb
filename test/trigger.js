@@ -24,6 +24,13 @@ test('simple trigger that makes a manual count', async function ({ build }, t) {
     t.alike(digest, { count: 2 })
   }
 
+  await db.delete('@example/members', { name: 'Test' })
+
+  {
+    const digest = await db.get('@example/digest')
+    t.alike(digest, { count: 1 })
+  }
+
   await db.close()
 })
 

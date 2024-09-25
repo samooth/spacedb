@@ -439,7 +439,7 @@ class HyperDB {
     let prevValue = null
     this.updates.mutating++
     try {
-      if (collection.trigger !== null) await this._runTrigger(collection, key, doc)
+      if (collection.trigger !== null) await this._runTrigger(collection, key, null)
       prevValue = await this._getPrev(key, collection)
     } finally {
       this.updates.mutating--
