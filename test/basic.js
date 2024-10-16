@@ -279,3 +279,28 @@ test('stats', async function ({ create }, t) {
 
   await db.close()
 })
+
+test('none-type indexes', async function ({ create }, t) {
+  const db = await create({ fixture: 3 })
+  await db.insert('@db/members', { id: 'maf', age: 37 })
+  await db.insert('@db/members', { id: 'andrew', age: 34 })
+  await db.insert('@db/members', { id: 'anna', age: 32 })
+
+  {
+    const result = await db.find('@db/members-by-age', { gte: { key: null, age: 33 }, lt: { key: null, age: 99 } }).toArray()
+    t.alike(result, [
+      { key: null, id: 'andrew', age: 34 },
+      { key: null, id: 'maf', age: 37 }
+    ])
+  }
+
+  {
+    const result = await db.find('@db/members-by-age', { gte: { age: 33 }, lt: { age: 99 } }).toArray()
+    t.alike(result, [
+      { key: null, id: 'andrew', age: 34 },
+      { key: null, id: 'maf', age: 37 }
+    ])
+  }
+
+  await db.close()
+})
