@@ -351,7 +351,7 @@ class HyperDB {
     const index = this.definition.resolveIndex(collectionName)
     if (index !== null) return this._getIndex(index, snap, doc)
 
-    return null
+    return Promise.reject(new Error('Unknown index or collection: ' + collectionName))
   }
 
   async _getCollection (collection, snap, doc) {
