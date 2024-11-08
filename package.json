@@ -1,7 +1,7 @@
 {
-  "name": "@holepunchto/hyperdb",
+  "name": "hyperdb",
   "version": "1.5.2",
-  "description": "P2P first db",
+  "description": "P2P Indexable Database",
   "main": "index.js",
   "files": [
     "index.js",
