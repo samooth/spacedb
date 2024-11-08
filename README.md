@@ -12,10 +12,10 @@ First generate your definition with the builder.
 The definition defines the schemas and collections you wanna use.
 
 ```js
-// TODO example
+// TODO (see ./example here for now)
 ```
 
-Then boot your db. You can use the same defition for a fully local db and a P2P one.
+Then boot your db. You can use the same definition for a fully local db and a P2P one.
 
 ``` js
 const HyperDB = require('hyperdb')
