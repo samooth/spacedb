@@ -277,3 +277,23 @@ test('cork/uncork', async function ({ create }, t) {
   t.pass('did not crash')
   await db.close()
 })
+
+test('updates can be queryies', async function ({ create }, t) {
+  const db = await create()
+
+  t.is(db.updated(), false)
+
+  await db.insert('@db/members', { id: 'maf', age: 50 })
+  t.is(db.updated(), true)
+  t.is(db.updated('@db/members', { id: 'maf' }), true)
+
+  await db.insert('@db/members', { id: 'maf', age: 50 })
+  t.is(db.updated(), true)
+  t.is(db.updated('@db/members', { id: 'maf' }), true)
+
+  await db.delete('@db/members', { id: 'maf' })
+  t.is(db.updated(), false)
+  t.is(db.updated('@db/members', { id: 'maf' }), false)
+
+  await db.close()
+})

@@ -213,10 +213,6 @@ class HyperDB {
     return this.engine === null
   }
 
-  get updated () {
-    return this.updates.size > 0
-  }
-
   get writable () {
     return this.rootInstance !== null
   }
@@ -332,6 +328,17 @@ class HyperDB {
 
   async findOne (indexName, query, options) {
     return this.find(indexName, query, { ...options, limit: 1 }).one()
+  }
+
+  updated (collectionName, doc) {
+    if (!collectionName) return this.updates.size > 0
+
+    const collection = this.definition.resolveCollection(collectionName)
+    if (collection === null) return false
+
+    const key = b4a.isBuffer(doc) ? doc : collection.encodeKey(doc)
+    const u = this.updates.get(key)
+    return u !== null
   }
 
   get (collectionName, doc) {

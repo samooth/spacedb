@@ -14,7 +14,7 @@ test('basic snapshot', async function ({ create }, t) {
 
   await db.flush()
 
-  t.is(db.updated, false)
+  t.is(db.updated(), false)
 
   t.alike(await empty.find('@db/members').toArray(), [])
   t.alike(await db.find('@db/members').toArray(), [{ id: 'someone', age: 40 }])

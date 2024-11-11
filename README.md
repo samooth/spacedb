@@ -95,9 +95,10 @@ Insert a document into a collection. NOTE: you have to flush the db later for th
 
 Delete a document from a collection. NOTE: you have to flush the db later for this to be persisted.
 
-#### `db.updated`
+#### `bool = db.updated([collection], [query])`
 
-Boolean indicating if this database was updated by you.
+Returns a boolean indicating if this database was updated. Pass a collection and doc query to know if
+a specific record was updated.
 
 #### `await db.flush()`
 
