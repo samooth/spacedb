@@ -510,7 +510,7 @@ class HyperDB {
 
     this.reload()
 
-    if (this.rootInstance !== this && this.rootInstance.updated() === false) this.rootInstance.reload()
+    if (this.rootInstance !== this && this.rootInstance.updates.size === 0) this.rootInstance.reload()
     if (this.autoClose === true) await this.close()
   }
 }
