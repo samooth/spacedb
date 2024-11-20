@@ -79,10 +79,11 @@ test('a divergent tx should not clear the memview', async function ({ create }, 
   const db = await create()
 
   await db.insert('@db/members', { id: 'someone', age: 40 })
+  await db.flush()
 
   {
     const tx = db.transaction()
-    await db.insert('@db/members', { id: 'else', age: 50 })
+    await tx.insert('@db/members', { id: 'else', age: 50 })
     await tx.flush()
   }
 
