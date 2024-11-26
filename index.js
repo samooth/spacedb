@@ -8,11 +8,10 @@ const BeeEngine = require('./lib/engine/bee')
 let compareHasDups = false
 
 class Updates {
-  constructor (clock, tick, entries) {
+  constructor (tick, entries) {
     this.refs = 1
     this.mutating = 0
     this.tick = tick // internal tie breaker clock for same key updates
-    this.clock = clock // engine clock
     this.map = new Map(entries)
     this.locks = new Map()
   }
@@ -74,7 +73,7 @@ class Updates {
     }
 
     this.refs--
-    return new Updates(this.clock, this.tick, entries)
+    return new Updates(this.tick, entries)
   }
 
   get (key) {
@@ -99,8 +98,7 @@ class Updates {
     return null
   }
 
-  flush (clock) {
-    this.clock = clock
+  flush () {
     this.map.clear()
   }
 
@@ -174,7 +172,7 @@ class HyperDB {
   constructor (engine, definition, {
     version = definition.version,
     snapshot = engine.snapshot(),
-    updates = new Updates(engine.clock, 0, [], []),
+    updates = new Updates(0, []),
     rootInstance = null,
     writable = true,
     context = null
@@ -201,8 +199,18 @@ class HyperDB {
   }
 
   static bee (core, definition, options = {}) {
-    const extension = options.extension !== false
-    return new HyperDB(new BeeEngine(core, { extension }), definition, options)
+    const extension = options.extension
+    const autoUpdate = !!options.autoUpdate
+
+    const db = new HyperDB(new BeeEngine(core, { extension }), definition, options)
+
+    if (autoUpdate) {
+      const update = db.update.bind(db)
+      core.on('append', update)
+      core.on('truncate', update)
+    }
+
+    return db
   }
 
   get core () {
@@ -289,11 +297,15 @@ class HyperDB {
   }
 
   snapshot (options) {
+    maybeClosed(this)
+
     const context = (options && options.context) || this.context
     return this._createSnapshot(null, false, context)
   }
 
   transaction (options) {
+    maybeClosed(this)
+
     if (this.rootInstance !== this) {
       throw new Error('Can only make transactions on main instance')
     }
@@ -349,16 +361,21 @@ class HyperDB {
     return u !== null
   }
 
-  get (collectionName, doc) {
+  async get (collectionName, doc) {
     const snap = this.engineSnapshot
+    if (snap !== null) snap.ref()
 
-    const collection = this.definition.resolveCollection(collectionName)
-    if (collection !== null) return this._getCollection(collection, snap, doc)
+    try {
+      const collection = this.definition.resolveCollection(collectionName)
+      if (collection !== null) return await this._getCollection(collection, snap, doc)
 
-    const index = this.definition.resolveIndex(collectionName)
-    if (index !== null) return this._getIndex(index, snap, doc)
+      const index = this.definition.resolveIndex(collectionName)
+      if (index !== null) return await this._getIndex(index, snap, doc)
 
-    return Promise.reject(new Error('Unknown index or collection: ' + collectionName))
+      return Promise.reject(new Error('Unknown index or collection: ' + collectionName))
+    } finally {
+      if (snap !== null) snap.unref()
+    }
   }
 
   async _getCollection (collection, snap, doc) {
@@ -404,12 +421,15 @@ class HyperDB {
 
     while (this.updates.enter(collection) === false) await this.updates.wait(collection)
 
+    const snap = this.engineSnapshot
     const key = collection.encodeKey(doc)
+
+    if (snap !== null) snap.ref()
 
     let prevValue = null
 
     try {
-      prevValue = await this.engine.get(this.engineSnapshot, key)
+      prevValue = await this.engine.get(snap, key)
       if (collection.trigger !== null) await this._runTrigger(collection, doc, null)
 
       if (prevValue === null) {
@@ -431,6 +451,7 @@ class HyperDB {
         for (let j = 0; j < del.length; j++) ups.push({ key: del[j], value: null })
       }
     } finally {
+      if (snap !== null) snap.unref()
       this.updates.exit(collection)
     }
   }
@@ -445,13 +466,16 @@ class HyperDB {
 
     while (this.updates.enter(collection) === false) await this.updates.wait(collection)
 
+    const snap = this.engineSnapshot
     const key = collection.encodeKey(doc)
     const value = collection.encodeValue(this.version, doc)
+
+    if (snap !== null) snap.ref()
 
     let prevValue = null
 
     try {
-      prevValue = await this.engine.get(this.engineSnapshot, key)
+      prevValue = await this.engine.get(snap, key)
       if (collection.trigger !== null) await this._runTrigger(collection, doc, doc)
 
       if (prevValue !== null && b4a.equals(value, prevValue)) return
@@ -477,17 +501,22 @@ class HyperDB {
         for (let j = 0; j < put.length; j++) ups.push({ key: put[j], value })
       }
     } finally {
+      if (snap !== null) snap.unref()
       this.updates.exit(collection)
     }
   }
 
-  reload () {
+  update () {
     maybeClosed(this)
 
-    if (this.updates.refs > 1) this.updates = this.updates.detach()
-    this.updates.flush(this.engine.clock)
+    if (this.engineSnapshot !== null && !this.engine.outdated(this.engineSnapshot)) {
+      return
+    }
 
-    if (this.engineSnapshot) {
+    if (this.updates.refs > 1) this.updates = this.updates.detach()
+    this.updates.flush()
+
+    if (this.engineSnapshot !== null) {
       this.engineSnapshot.unref()
       this.engineSnapshot = this.engine.snapshot()
     }
@@ -500,23 +529,25 @@ class HyperDB {
   async flush () {
     maybeClosed(this)
 
+    if (this.engineSnapshot.opened === false) await this.engineSnapshot.ready()
+
     if (this.updating > 0) throw new Error('Insert/delete in progress, refusing to commit')
     if (this.rootInstance === null) throw new Error('Instance is not writable, refusing to commit')
     if (this.updates.size === 0) return
-    if (this.updates.clock !== this.engine.clock) throw new Error('Database has changed, refusing to commit')
+    if (this.engine.outdated(this.engineSnapshot)) throw new Error('Database has changed, refusing to commit')
     if (this.updates.refs > 1) this.updates = this.updates.detach()
 
     await this.engine.commit(this.updates)
 
-    this.reload()
+    this.update()
 
-    if (this.rootInstance !== this && this.rootInstance.updates.size === 0) this.rootInstance.reload()
+    if (this.rootInstance !== this && this.rootInstance.updates.size === 0) this.rootInstance.update()
     if (this.autoClose === true) await this.close()
   }
 }
 
 function maybeClosed (db) {
-  if (db.closing !== null) throw new Error('Closed')
+  if (db.closing !== null) throw new Error('Hyperdb is closed')
 }
 
 function withinRange (range, key) {
