@@ -311,7 +311,11 @@ class HyperDB {
     }
 
     const context = (options && options.context) || this.context
-    return this._createSnapshot(this, true, context)
+    const tx = this._createSnapshot(this, true, context)
+
+    tx.update()
+
+    return tx
   }
 
   find (indexName, query = {}, options) {
