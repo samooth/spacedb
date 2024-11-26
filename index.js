@@ -593,7 +593,7 @@ function diffKeys (a, b) {
 
   while (true) {
     if (ai < a.length && bi < b.length) {
-      const cmp = b4a.compare(a[bi], b[bi])
+      const cmp = b4a.compare(a[ai], b[bi])
 
       if (cmp === 0) {
         ai++
