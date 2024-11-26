@@ -1,7 +1,7 @@
 const { test, replicate } = require('./helpers')
 
 test.bee('updates are explicit per default', async function ({ create }, t) {
-  t.plan(4)
+  t.plan(6)
 
   const db = await create()
 
@@ -11,17 +11,25 @@ test.bee('updates are explicit per default', async function ({ create }, t) {
   const clone = await create({ key: db.core.key })
 
   clone.core.once('append', async function () {
+    {
+      const members = await clone.find('@db/members').toArray()
+
+      t.alike(members, [])
+      t.is(members.length, 0)
+    }
+
     clone.update()
 
-    const members = await clone.find('@db/members').toArray()
-    const expected = await db.find('@db/members').toArray()
+    {
+      const members = await clone.find('@db/members').toArray()
+      const expected = await db.find('@db/members').toArray()
 
-    t.alike(members, expected)
-    t.is(members.length, 2)
+      t.alike(members, expected)
+      t.is(members.length, 2)
+    }
   })
 
   t.alike(clone.core.key, db.core.key)
-  replicate(t, clone, db)
 
   {
     const tx = db.transaction()
@@ -31,6 +39,8 @@ test.bee('updates are explicit per default', async function ({ create }, t) {
 
   const all = await db.find('@db/members').toArray()
   t.is(all.length, 2)
+
+  replicate(t, clone, db)
 
   t.teardown(async () => {
     await db.close()
@@ -57,7 +67,6 @@ test.bee('can auto update', async function ({ create }, t) {
   })
 
   t.alike(clone.core.key, db.core.key)
-  replicate(t, clone, db)
 
   {
     const tx = db.transaction()
@@ -67,6 +76,8 @@ test.bee('can auto update', async function ({ create }, t) {
 
   const all = await db.find('@db/members').toArray()
   t.is(all.length, 2)
+
+  replicate(t, clone, db)
 
   t.teardown(async () => {
     await db.close()
