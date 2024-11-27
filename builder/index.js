@@ -316,7 +316,7 @@ class Builder {
     fs.writeFileSync(codePath, generateCode(hyperdb), { encoding: 'utf-8' })
   }
 
-  static from (schemaJson, dbJson) {
+  static from (schemaJson, dbJson, opts) {
     const schema = Hyperschema.from(schemaJson)
     if (typeof dbJson === 'string') {
       const jsonFilePath = p.join(p.resolve(dbJson), DB_JSON_FILE_NAME)
@@ -327,11 +327,11 @@ class Builder {
       } catch (err) {
         if (err.code !== 'ENOENT') throw err
       }
-      const opts = { dbDir: dbJson, schemaDir: schemaJson }
+      opts = { ...opts, dbDir: dbJson, schemaDir: schemaJson }
       if (exists) return new this(schema, JSON.parse(fs.readFileSync(jsonFilePath)), opts)
       return new this(schema, null, opts)
     }
-    return new this(schema, dbJson)
+    return new this(schema, dbJson, opts)
   }
 }
 
