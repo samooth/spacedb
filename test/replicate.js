@@ -84,3 +84,24 @@ test.bee('can auto update', async function ({ create }, t) {
     await clone.close()
   })
 })
+
+test.bee('auto update but writable', async function ({ create }, t) {
+  const db = await create({ autoUpdate: true })
+
+  await db.insert('@db/members', { id: 'someone', age: 40 })
+  await db.flush()
+
+  const tx = db.transaction()
+  await tx.insert('@db/members', { id: 'someone', age: 41 })
+  await tx.insert('@db/members', { id: 'someone else', age: 41 })
+  await tx.flush()
+
+  const list = await db.find('@db/members').toArray()
+
+  t.alike(list, [
+    { id: 'someone', age: 41 },
+    { id: 'someone else', age: 41 }
+  ])
+
+  await db.close()
+})
