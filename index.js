@@ -255,7 +255,7 @@ class HyperDB {
   }
 
   changes (range = {}) {
-    return this.engine.changes(this.engineSnapshot, this.version, this.definition, range)
+    return this.engine.changes(range.live ? null : this.engineSnapshot, this.version, this.definition, range)
   }
 
   watch (fn) {
