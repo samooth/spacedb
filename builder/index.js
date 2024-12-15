@@ -35,6 +35,10 @@ class DBType {
     }
   }
 
+  getNamespace () {
+    return this.builder.namespaces.get(this.namespace)
+  }
+
   _resolveKey (schema, path) {
     const components = path.split('.')
 
@@ -212,11 +216,17 @@ class BuilderNamespace {
     this.builder = builder
     this.name = name
     this.prefix = prefix
+    this.id = builder.namespaces.size
 
     this.collections = new BuilderCollections(this)
     this.indexes = new BuilderIndexes(this)
+    this.helpers = null
 
     this.descriptions = []
+  }
+
+  require (filename) {
+    this.helpers = p.resolve(filename)
   }
 
   toJSON () {
@@ -314,7 +324,7 @@ class Builder {
 
     fs.writeFileSync(messagesPath, hyperdb.schema.toCode(), { encoding: 'utf-8' })
     fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8' })
-    fs.writeFileSync(codePath, generateCode(hyperdb), { encoding: 'utf-8' })
+    fs.writeFileSync(codePath, generateCode(hyperdb, { directory: dbDir }), { encoding: 'utf-8' })
   }
 
   static from (schemaJson, dbJson, opts) {
