@@ -72,7 +72,7 @@ module.exports = function generateCode (hyperdb, { directory = '.' } = {}) {
   str += '\n'
   str += `const { IndexEncoder, c } = require('${pkg.name}/runtime')\n`
   str += '\n'
-  str += 'const { version, resolveStruct } = require(\'./messages.js\')\n'
+  str += 'const { version, getEncoding, setVersion } = require(\'./messages.js\')\n'
   str += '\n'
 
   for (const ns of hyperdb.namespaces.values()) {
@@ -162,7 +162,7 @@ function generateCommonPrefix (type) {
   if (len === 0) {
     str += '  return []\n'
   } else if (len === 1) {
-    str += `  const a = ${getKeyPath(type.fullKey[0], 'record')}\n`
+    str += `  const a = ${getKeyPath(type.fullKey[0], 'record', true)}\n`
     str += '  return a === undefined ? [] : [a]\n'
   } else {
     str += '  const arr = []\n'
@@ -170,7 +170,7 @@ function generateCommonPrefix (type) {
 
     for (let i = 0; i < len; i++) {
       const key = type.fullKey[i]
-      str += `  const a${i} = ${getKeyPath(key, 'record')}\n`
+      str += `  const a${i} = ${getKeyPath(key, 'record', true)}\n`
       str += `  if (a${i} === undefined) return arr\n`
       str += `  arr.push(a${i})\n`
       str += '\n'
@@ -189,6 +189,10 @@ function generateCollectionDefinition (collection) {
 
   let str = generateCommonPrefix(collection)
 
+  str += `// ${s(collection.fqn)} value encoding\n`
+  str += `const ${id}_enc = getEncoding(${s(collection.valueEncoding)})\n`
+  str += '\n'
+
   if (collection.trigger) {
     str += `// ${s(collection.fqn)} has the following schema defined trigger\n`
     str += `const ${id}_trigger = ${gen('helpers' + collection.getNamespace().id, collection.trigger)}\n`
@@ -198,34 +202,22 @@ function generateCollectionDefinition (collection) {
   str += `// ${s(collection.fqn)} reconstruction function\n`
   str += `function ${id}_reconstruct (version, keyBuf, valueBuf) {\n`
   if (collection.key.length) str += `  const key = ${id}_key.decode(keyBuf)\n`
-  str += `  const value = c.decode(resolveStruct(${s(collection.valueEncoding)}, version), valueBuf)\n`
-  if (collection.key.length === 0) {
-    str += '  return value\n'
-  } else {
-    str += '  // TODO: This should be fully code generated\n'
-    str += '  return {\n'
-    for (let i = 0; i < collection.key.length; i++) {
-      const key = collection.key[i]
-      str += `    ${gen.property(key)}: key[${i}],\n`
-    }
-    str += '    ...value\n'
-    str += '  }\n'
+  str += '  setVersion(version)\n'
+  str += `  const record = c.decode(${id}_enc, valueBuf)\n`
+
+  for (let i = 0; i < collection.key.length; i++) {
+    const key = collection.key[i]
+    str += `  ${getKeyPath(key, 'record', false)} = key[${i}]\n`
   }
+
+  str += '  return record\n'
   str += '}\n'
 
   str += `// ${s(collection.fqn)} key reconstruction function\n`
   str += `function ${id}_reconstruct_key (keyBuf) {\n`
   if (collection.key.length) str += `  const key = ${id}_key.decode(keyBuf)\n`
-  if (collection.key.length === 0) {
-    str += '  return {}\n'
-  } else {
-    str += '  return {\n'
-    for (let i = 0; i < collection.key.length; i++) {
-      const key = collection.key[i]
-      str += `    ${gen.property(key)}: key[${i}]${i < collection.key.length - 1 ? ',' : ''}\n`
-    }
-    str += '  }\n'
-  }
+
+  str += generateKeyReconstruct('  ', collection.key, 'key') + '\n'
   str += '}\n'
 
   str += '\n'
@@ -283,9 +275,12 @@ function generateEncodeKeyRange (index, sep) {
 }
 
 function generateEncodeCollectionValue (collection, sep) {
+  const id = getId(collection)
+
   let str = ''
   str += '  encodeValue (version, record) {\n'
-  str += `    return c.encode(resolveStruct(${s(collection.valueEncoding)}, version), record)\n`
+  str += '    setVersion(version)\n'
+  str += `    return c.encode(${id}_enc, record)\n`
   str += `  }${sep}\n`
   return str
 }
@@ -340,6 +335,52 @@ function toProps (name, keys) {
   return keys.map(c => c === null ? name : c.split('.').reduce(gen, name))
 }
 
+function generateKeyReconstruct (indent, keys, key) {
+  if (keys.length === 0) return indent + 'return {}\n'
+
+  const grouped = new Map()
+
+  for (let index = 0; index < keys.length; index++) {
+    const k = keys[index].split('.')
+    let map = grouped
+
+    for (let i = 0; i < k.length; i++) {
+      let info = map.get(k[i])
+
+      if (!info) {
+        info = { key: null, index: -1, map: null }
+        map.set(k[i], info)
+      }
+
+      if (i === k.length - 1) {
+        info.key = keys[index]
+        info.index = index
+      } else {
+        map = info.map = new Map()
+      }
+    }
+  }
+
+  return indent + 'return ' + generate(indent, grouped)
+
+  function generate (indent, map) {
+    let s = '{\n'
+    const all = [...map]
+    for (let i = 0; i < all.length; i++) {
+      const [k, v] = all[i]
+      s += indent + `  ${gen.property(k)}: `
+      if (v.index !== -1) {
+        s += `${key}[${v.index}]`
+      } else {
+        s += generate(indent + '  ', v.map)
+      }
+      s += (i === all.length - 1) ? '\n' : ',\n'
+    }
+    s += indent + '}'
+    return s
+  }
+}
+
 function generateIndexKeyEncoding (type) {
   let str = 'new IndexEncoder([\n'
   for (let i = 0; i < type.keyEncoding.length; i++) {
@@ -364,8 +405,8 @@ function getIndexId (index) {
   return 'index' + index.id
 }
 
-function getKeyPath (key, name) {
+function getKeyPath (key, name, optional) {
   if (key === null) return name
-  const r = (a, b, i) => (i === 0) ? gen(a, b) : gen.optional(a, b)
-  return key.split('.').reduce(r, 'record')
+  const r = (a, b, i) => (i === 0 || !optional) ? gen(a, b) : gen.optional(a, b)
+  return key.split('.').reduce(r, name)
 }

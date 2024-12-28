@@ -12,30 +12,56 @@ let version = VERSION
 // @db/member
 const encoding0 = {
   preencode (state, m) {
-    c.none.preencode(state, m.key)
     c.string.preencode(state, m.id)
     c.uint.preencode(state, m.age)
   },
   encode (state, m) {
-    c.none.encode(state, m.key)
     c.string.encode(state, m.id)
     c.uint.encode(state, m.age)
   },
   decode (state) {
-    const r0 = c.none.decode(state)
-    const r1 = c.string.decode(state)
-    const r2 = c.uint.decode(state)
+    const r0 = c.string.decode(state)
+    const r1 = c.uint.decode(state)
 
     return {
-      key: r0,
-      id: r1,
-      age: r2
+      id: r0,
+      age: r1
+    }
+  }
+}
+
+// @db/nested.member
+const encoding1_0 = c.frame(encoding0)
+
+// @db/nested
+const encoding1 = {
+  preencode (state, m) {
+    let flags = 0
+    if (m.fun) flags |= 1
+
+    encoding1_0.preencode(state, m.member)
+    c.uint.preencode(state, flags)
+  },
+  encode (state, m) {
+    let flags = 0
+    if (m.fun) flags |= 1
+
+    encoding1_0.encode(state, m.member)
+    c.uint.encode(state, flags)
+  },
+  decode (state) {
+    const r0 = encoding1_0.decode(state)
+    const flags = state.start < state.end ? c.uint.decode(state) : 0
+
+    return {
+      member: r0,
+      fun: (flags & 1) !== 0
     }
   }
 }
 
 // @db/member/hyperdb#0
-const encoding1 = {
+const encoding2 = {
   preencode (state, m) {
     c.uint.preencode(state, m.age)
   },
@@ -43,12 +69,41 @@ const encoding1 = {
     c.uint.encode(state, m.age)
   },
   decode (state) {
-    const r2 = c.uint.decode(state)
+    const r1 = c.uint.decode(state)
 
     return {
-      key: null,
       id: null,
-      age: r2
+      age: r1
+    }
+  }
+}
+
+// @db/nested/hyperdb#0.member
+const encoding3_0 = c.frame(encoding0)
+
+// @db/nested/hyperdb#0
+const encoding3 = {
+  preencode (state, m) {
+    let flags = 0
+    if (m.fun) flags |= 1
+
+    encoding3_0.preencode(state, m.member)
+    c.uint.preencode(state, flags)
+  },
+  encode (state, m) {
+    let flags = 0
+    if (m.fun) flags |= 1
+
+    encoding3_0.encode(state, m.member)
+    c.uint.encode(state, flags)
+  },
+  decode (state) {
+    const r0 = encoding3_0.decode(state)
+    const flags = state.start < state.end ? c.uint.decode(state) : 0
+
+    return {
+      member: r0,
+      fun: (flags & 1) !== 0
     }
   }
 }
@@ -70,7 +125,9 @@ function decode (name, buffer, v = VERSION) {
 function getEncoding (name) {
   switch (name) {
     case '@db/member': return encoding0
-    case '@db/member/hyperdb#0': return encoding1
+    case '@db/nested': return encoding1
+    case '@db/member/hyperdb#0': return encoding2
+    case '@db/nested/hyperdb#0': return encoding3
     default: throw new Error('Encoder not found ' + name)
   }
 }

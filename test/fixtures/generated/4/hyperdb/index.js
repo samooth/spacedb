@@ -5,41 +5,43 @@ const { IndexEncoder, c } = require('hyperdb/runtime')
 
 const { version, getEncoding, setVersion } = require('./messages.js')
 
-// '@db/members' collection key
+// '@db/nested-members' collection key
 const collection0_key = new IndexEncoder([
   IndexEncoder.STRING
 ], { prefix: 0 })
 
 function collection0_indexify (record) {
-  const a = record.id
+  const a = record.member?.id
   return a === undefined ? [] : [a]
 }
 
-// '@db/members' value encoding
-const collection0_enc = getEncoding('@db/member/hyperdb#0')
+// '@db/nested-members' value encoding
+const collection0_enc = getEncoding('@db/nested/hyperdb#0')
 
-// '@db/members' reconstruction function
+// '@db/nested-members' reconstruction function
 function collection0_reconstruct (version, keyBuf, valueBuf) {
   const key = collection0_key.decode(keyBuf)
   setVersion(version)
   const record = c.decode(collection0_enc, valueBuf)
-  record.id = key[0]
+  record.member.id = key[0]
   return record
 }
-// '@db/members' key reconstruction function
+// '@db/nested-members' key reconstruction function
 function collection0_reconstruct_key (keyBuf) {
   const key = collection0_key.decode(keyBuf)
   return {
-    id: key[0]
+    member: {
+      id: key[0]
+    }
   }
 }
 
-// '@db/members'
+// '@db/nested-members'
 const collection0 = {
-  name: '@db/members',
+  name: '@db/nested-members',
   id: 0,
   encodeKey (record) {
-    const key = [record.id]
+    const key = [record.member.id]
     return collection0_key.encode(key)
   },
   encodeKeyRange ({ gt, lt, gte, lte } = {}) {
@@ -60,58 +62,12 @@ const collection0 = {
   indexes: []
 }
 
-// '@db/members-by-age' collection key
-const index1_key = new IndexEncoder([
-  IndexEncoder.UINT,
-  IndexEncoder.STRING
-], { prefix: 1 })
-
-function index1_indexify (record) {
-  const arr = []
-
-  const a0 = record.age
-  if (a0 === undefined) return arr
-  arr.push(a0)
-
-  const a1 = record.id
-  if (a1 === undefined) return arr
-  arr.push(a1)
-
-  return arr
-}
-
-// '@db/members-by-age'
-const index1 = {
-  name: '@db/members-by-age',
-  id: 1,
-  encodeKey (record) {
-    return index1_key.encode(index1_indexify(record))
-  },
-  encodeKeyRange ({ gt, lt, gte, lte } = {}) {
-    return index1_key.encodeRange({
-      gt: gt ? index1_indexify(gt) : null,
-      lt: lt ? index1_indexify(lt) : null,
-      gte: gte ? index1_indexify(gte) : null,
-      lte: lte ? index1_indexify(lte) : null
-    })
-  },
-  encodeValue: (doc) => index1.collection.encodeKey(doc),
-  encodeIndexKeys (record, context) {
-    return [index1_key.encode([record.age, record.id])]
-  },
-  reconstruct: (keyBuf, valueBuf) => valueBuf,
-  offset: collection0.indexes.length,
-  collection: collection0
-}
-collection0.indexes.push(index1)
-
 module.exports = {
   version,
   collections: [
     collection0
   ],
   indexes: [
-    index1
   ],
   resolveCollection,
   resolveIndex
@@ -119,14 +75,13 @@ module.exports = {
 
 function resolveCollection (name) {
   switch (name) {
-    case '@db/members': return collection0
+    case '@db/nested-members': return collection0
     default: return null
   }
 }
 
 function resolveIndex (name) {
   switch (name) {
-    case '@db/members-by-age': return index1
     default: return null
   }
 }
