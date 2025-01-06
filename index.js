@@ -194,8 +194,9 @@ class HyperDB {
     return !!(definition && typeof definition.resolveCollection === 'function')
   }
 
-  static rocks (storage, definition, options) {
-    return new HyperDB(new RocksEngine(storage), definition, options)
+  static rocks (storage, definition, options = {}) {
+    const readOnly = options.readOnly === true || options.readonly === true
+    return new HyperDB(new RocksEngine(storage, { readOnly }), definition, options)
   }
 
   static bee (core, definition, options = {}) {
