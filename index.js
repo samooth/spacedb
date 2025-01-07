@@ -239,15 +239,15 @@ class HyperDB {
   }
 
   cork () {
-    this.engineSnapshot.cork()
+    if (this.engineSnapshot !== null) this.engineSnapshot.cork()
   }
 
   uncork () {
-    this.engineSnapshot.uncork()
+    if (this.engineSnapshot !== null) this.engineSnapshot.uncork()
   }
 
   ready () {
-    return this.engineSnapshot.ready()
+    return this.engineSnapshot === null ? Promise.resolve() : this.engineSnapshot.ready()
   }
 
   close () {
@@ -256,6 +256,8 @@ class HyperDB {
   }
 
   changes (range = {}) {
+    maybeClosed(this)
+
     return this.engine.changes(range.live ? null : this.engineSnapshot, this.version, this.definition, range)
   }
 
@@ -354,6 +356,7 @@ class HyperDB {
   }
 
   updated (collectionName, doc) {
+    if (this.updates === null) return false
     if (!collectionName) return this.updates.size > 0
 
     const collection = this.definition.resolveCollection(collectionName)
@@ -365,6 +368,8 @@ class HyperDB {
   }
 
   async get (collectionName, doc) {
+    maybeClosed(this)
+
     const snap = this.engineSnapshot.ref()
 
     try {
@@ -372,9 +377,18 @@ class HyperDB {
       if (collection !== null) return await this._getCollection(collection, snap, doc)
 
       const index = this.definition.resolveIndex(collectionName)
-      if (index !== null) return await this._getIndex(index, snap, doc)
+      if (index === null) throw new Error('Unknown index or collection: ' + collectionName)
 
-      return Promise.reject(new Error('Unknown index or collection: ' + collectionName))
+      const key = index.encodeKey(doc, this.context)
+      if (key === null) return null
+
+      const u = this.updates.getIndex(index, key)
+      if (u !== null) return index.collection.reconstruct(this.version, u.key, u.value)
+
+      const value = await snap.get(key)
+      if (value === null) return null
+
+      return this._getCollection(index.collection, snap, index.reconstruct(key, value))
     } finally {
       if (snap !== null) snap.unref()
     }
@@ -391,21 +405,6 @@ class HyperDB {
     const value = u !== null ? u.value : await snap.get(key)
 
     return value === null ? null : collection.reconstruct(this.version, key, value)
-  }
-
-  async _getIndex (index, snap, doc) {
-    maybeClosed(this)
-
-    const key = index.encodeKey(doc, this.context)
-    if (key === null) return null
-
-    const u = this.updates.getIndex(index, key)
-    if (u !== null) return index.collection.reconstruct(this.version, u.key, u.value)
-
-    const value = await snap.get(key)
-    if (value === null) return null
-
-    return this._getCollection(index.collection, snap, index.reconstruct(key, value))
   }
 
   // TODO: needs to wait for pending inserts/deletes and then lock all future ones whilst it runs
