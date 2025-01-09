@@ -336,7 +336,7 @@ function toProps (name, keys) {
 }
 
 function generateKeyReconstruct (indent, keys, key) {
-  if (keys.length === 0) return indent + 'return {}\n'
+  if (keys.length === 0) return indent + 'return {}'
 
   const grouped = new Map()
 
