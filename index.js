@@ -383,7 +383,7 @@ class HyperDB {
       if (key === null) return null
 
       const u = this.updates.getIndex(index, key)
-      if (u !== null) return index.collection.reconstruct(this.version, u.key, u.value)
+      if (u !== null) return u.value === null ? null : index.collection.reconstruct(this.version, u.key, u.value)
 
       const value = await snap.get(key)
       if (value === null) return null

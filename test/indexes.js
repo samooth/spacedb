@@ -105,6 +105,39 @@ test('get on an index', async function ({ build }, t) {
   await db.close()
 })
 
+test('delete on an index', async function ({ build }, t) {
+  const db = await build(createExampleDB)
+
+  const expected = { name: 'test', age: 15 }
+  await db.insert('@example/members', expected)
+
+  await db.flush()
+
+  {
+    const doc = await db.get('@example/last-teenager', 15)
+    t.alike(doc, expected)
+  }
+
+  {
+    const doc = await db.get('@example/members-by-name', 'test')
+    t.alike(doc, expected)
+  }
+
+  db.delete('@example/members', { name: 'test' })
+
+  {
+    const doc = await db.get('@example/last-teenager', 15)
+    t.alike(doc, null)
+  }
+
+  {
+    const doc = await db.get('@example/members-by-name', 'test')
+    t.alike(doc, null)
+  }
+
+  await db.close()
+})
+
 function createExampleDB (HyperDB, Hyperschema, paths) {
   const schema = Hyperschema.from(paths.schema)
   const example = schema.namespace('example')
