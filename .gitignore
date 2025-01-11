@@ -6,6 +6,6 @@ package-lock.json
 rocks.db
 sandbox.mjs
 sandbox
-builder/output
+builder/example/spec
 test/fixtures/tmp
 *.db

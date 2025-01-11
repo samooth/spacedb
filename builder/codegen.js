@@ -120,7 +120,7 @@ module.exports = function generateCode (hyperdb, { directory = '.', esm = false 
   str += ']\n\n'
 
   if (esm) {
-    str += 'export { version, collections, indexes, resolveCollection, resolveIndex }\n'
+    str += 'export default { version, collections, indexes, resolveCollection, resolveIndex }\n'
   } else {
     str += 'module.exports = { version, collections, indexes, resolveCollection, resolveIndex }\n'
   }

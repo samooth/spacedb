@@ -1,5 +1,5 @@
 const Hyperschema = require('hyperschema')
-const HyperDB = require('.')
+const HyperDB = require('../')
 
 const SCHEMA_DIR = './spec/hyperschema'
 const DB_DIR = './spec/hyperdb'
