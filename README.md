@@ -28,11 +28,11 @@ It is that simple.
 
 ## API
 
-#### `db = Hyperdb.bee(bee, definition, [options])`
+#### `db = Hyperdb.bee(hypercore, definition, [options])`
 
 Make a db backed by Hyperbee. P2P!
 
-#### `db = Hyperdb.rocks(bee, definition, [options])`
+#### `db = Hyperdb.rocks(path, definition, [options])`
 
 Make a db backed by RocksDB. Local only!
 
