@@ -64,6 +64,24 @@ test('two collections work with indexes', async function ({ build }, t) {
   await db.close()
 })
 
+test('index that is smaller than collection has multiple values', async function ({ build }, t) {
+  const db = await build(createExampleDB)
+
+  await db.insert('@example/members', { name: 'test-1', age: 16 })
+  await db.insert('@example/members', { name: 'test-2', age: 17 })
+
+  await db.flush()
+
+  await db.delete('@example/members', { name: 'test-2' })
+  await db.insert('@example/members', { name: 'test-3', age: 17 })
+
+  const last = await db.get('@example/last-teenager', 17)
+
+  t.is(last.name, 'test-3')
+
+  await db.close()
+})
+
 test('get on an index', async function ({ build }, t) {
   const db = await build(createExampleDB)
 

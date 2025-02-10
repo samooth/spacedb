@@ -85,17 +85,28 @@ class Updates {
     // 99% of all reads
     if (this.map.size === 0) return null
 
+    const matches = []
+
     for (const u of this.map.values()) {
       if (u.collection !== index.collection) continue
 
       const ups = u.indexes[index.offset]
 
       for (let i = 0; i < ups.length; i++) {
-        if (b4a.equals(key, ups[i].key)) return u
+        if (b4a.equals(key, ups[i].key)) matches.push(u)
       }
     }
 
-    return null
+    if (!matches.length) return null
+
+    let latest = matches[0]
+
+    for (let i = 1; i < matches.length; i++) {
+      const m = matches[i]
+      if (m.tick > latest.tick) latest = m
+    }
+
+    return latest
   }
 
   flush () {
