@@ -243,6 +243,8 @@ test('watch', async function ({ create }, t) {
   t.ok(changed)
 
   await db.close()
+  // hack due to hc releasing something slowly, fix there
+  await new Promise(resolve => setTimeout(resolve, 1000))
 })
 
 test('basic reopen', async function ({ create }, t) {
