@@ -380,15 +380,17 @@ class HyperDB {
 
     if (collection === null) throw new Error('Unknown index: ' + indexName)
 
-    const checkout = query.checkout || 0
-    const limit = query.limit
-    const reverse = !!query.reverse
+    const {
+      checkout = -1,
+      limit,
+      reverse = false
+    } = query
 
     const range = index === null
       ? collection.encodeKeyRange(query)
       : index.encodeKeyRange(query)
 
-    const overlay = checkout !== 0
+    const overlay = checkout !== -1
       ? []
       : index === null
         ? this.updates.collectionOverlay(collection, range, reverse)
@@ -420,7 +422,7 @@ class HyperDB {
     return u !== null
   }
 
-  async get (collectionName, doc, { checkout = 0 } = {}) {
+  async get (collectionName, doc, { checkout = -1 } = {}) {
     maybeClosed(this)
 
     const snap = this.engineSnapshot.ref()
@@ -436,7 +438,7 @@ class HyperDB {
       if (key === null) return null
 
       const u = this.updates.getIndex(index, key)
-      if (u !== null && checkout === 0) return u.value === null ? null : index.collection.reconstruct(this.version, u.key, u.value)
+      if (u !== null && checkout === -1) return u.value === null ? null : index.collection.reconstruct(this.version, u.key, u.value)
 
       const value = await snap.get(key, checkout)
       if (value === null) return null
@@ -455,7 +457,7 @@ class HyperDB {
     const key = b4a.isBuffer(doc) ? doc : collection.encodeKey(doc)
 
     const u = this.updates.get(key)
-    const value = (u !== null && checkout === 0) ? u.value : await snap.get(key, checkout)
+    const value = (u !== null && checkout === -1) ? u.value : await snap.get(key, checkout)
 
     return value === null ? null : collection.reconstruct(this.version, key, value)
   }
