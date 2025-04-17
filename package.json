@@ -1,6 +1,6 @@
 {
-  "name": "hyperdb",
-  "version": "4.10.1",
+  "name": "spacedb",
+  "version": "0.0.1",
   "description": "P2P Indexable Database",
   "files": [
     "index.js",
@@ -41,27 +41,28 @@
     "compact-encoding": "^2.15.0",
     "generate-object-property": "^2.0.0",
     "generate-string": "^1.0.1",
-    "hyperbee": "^2.24.2",
-    "hyperschema": "^1.9.2",
     "index-encoder": "^3.2.0",
     "refcounter": "^1.0.0",
     "rocksdb-native": "^3.0.0",
+    "spacebee": "latest",
+    "spaceschema": "latest",
     "streamx": "^2.20.0"
   },
   "devDependencies": {
+    "bitspacecore": "latest",
     "brittle": "^3.7.0",
-    "hypercore": "^11.0.0",
+    "eslint-plugin-react": "^7.37.5",
     "standard": "^17.1.0",
     "test-tmp": "^1.2.1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/holepunchto/hyperdb.git"
+    "url": "https://github.com/samooth/spacedb.git"
   },
   "author": "Holepunch Inc",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/holepunchto/hyperdb/issues"
+    "url": "https://github.com/samooth/spacedb/issues"
   },
-  "homepage": "https://github.com/holepunchto/hyperdb"
+  "homepage": "https://github.com/samooth/spacedb"
 }

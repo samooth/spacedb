@@ -1,6 +1,6 @@
 const p = require('path')
 const fs = require('fs')
-const Hyperschema = require('hyperschema')
+const Spaceschema = require('spaceschema')
 
 const generateCode = require('./codegen')
 
@@ -96,7 +96,7 @@ class Collection extends DBType {
 
   _deriveValueSchema (schema = this.schema, prefix = '', primaryKeySet = new Set(this.key), parents = new Set()) {
     const fields = []
-    const type = '/hyperdb#' + this.id
+    const type = '/spacedb#' + this.id
 
     if (!schema.isStruct || parents.has(schema)) return { external: false, fqn: schema.name }
 
@@ -347,12 +347,12 @@ class Builder {
     }
   }
 
-  static toDisk (hyperdb, dbDir, opts = {}) {
+  static toDisk (spacedb, dbDir, opts = {}) {
     if (typeof dbDir === 'object' && dbDir) {
       opts = dbDir
       dbDir = null
     }
-    if (!dbDir) dbDir = hyperdb.dbDir
+    if (!dbDir) dbDir = spacedb.dbDir
     fs.mkdirSync(dbDir, { recursive: true })
 
     const { esm = this.esm } = opts
@@ -361,13 +361,13 @@ class Builder {
     const dbJsonPath = p.join(p.resolve(dbDir), DB_JSON_FILE_NAME)
     const codePath = p.join(p.resolve(dbDir), CODE_FILE_NAME)
 
-    fs.writeFileSync(messagesPath, hyperdb.schema.toCode({ esm }), { encoding: 'utf-8' })
-    fs.writeFileSync(dbJsonPath, JSON.stringify(hyperdb.toJSON(), null, 2), { encoding: 'utf-8' })
-    fs.writeFileSync(codePath, generateCode(hyperdb, { directory: dbDir, esm }), { encoding: 'utf-8' })
+    fs.writeFileSync(messagesPath, spacedb.schema.toCode({ esm }), { encoding: 'utf-8' })
+    fs.writeFileSync(dbJsonPath, JSON.stringify(spacedb.toJSON(), null, 2), { encoding: 'utf-8' })
+    fs.writeFileSync(codePath, generateCode(spacedb, { directory: dbDir, esm }), { encoding: 'utf-8' })
   }
 
   static from (schemaJson, dbJson, opts) {
-    const schema = Hyperschema.from(schemaJson)
+    const schema = Spaceschema.from(schemaJson)
     if (typeof dbJson === 'string') {
       const jsonFilePath = p.join(p.resolve(dbJson), DB_JSON_FILE_NAME)
       let exists = false

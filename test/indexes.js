@@ -156,8 +156,8 @@ test('delete on an index', async function ({ build }, t) {
   await db.close()
 })
 
-function createExampleDB (HyperDB, Hyperschema, paths) {
-  const schema = Hyperschema.from(paths.schema)
+function createExampleDB (SpaceDB, Spaceschema, paths) {
+  const schema = Spaceschema.from(paths.schema)
   const example = schema.namespace('example')
 
   example.register({
@@ -191,9 +191,9 @@ function createExampleDB (HyperDB, Hyperschema, paths) {
     ]
   })
 
-  Hyperschema.toDisk(schema)
+  Spaceschema.toDisk(schema)
 
-  const db = HyperDB.from(paths.schema, paths.db)
+  const db = SpaceDB.from(paths.schema, paths.db)
   const exampleDB = db.namespace('example')
 
   exampleDB.require(paths.helpers)
@@ -239,5 +239,5 @@ function createExampleDB (HyperDB, Hyperschema, paths) {
     }
   })
 
-  HyperDB.toDisk(db)
+  SpaceDB.toDisk(db)
 }

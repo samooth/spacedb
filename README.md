@@ -1,9 +1,9 @@
-# hyperdb
+# spacedb
 
 Database built for P2P and local indexing
 
 ```
-npm install hyperdb
+npm install spacedb
 ```
 
 ## Usage
@@ -13,14 +13,14 @@ The definition defines the schemas and collections you wanna use.
 
 ```js
 // build.js
-const Hyperschema = require('hyperschema')
-const HyperDB = require('hyperdb/builder')
+const Spaceschema = require('spaceschema')
+const SpaceDB = require('spacedb/builder')
 
-const SCHEMA_DIR = './spec/hyperschema' // where the schema definitions are written
-const DB_DIR = './spec/hyperdb' // Where to install db definition
+const SCHEMA_DIR = './spec/spaceschema' // where the schema definitions are written
+const DB_DIR = './spec/spacedb' // Where to install db definition
 
-// Hyperschema definitions
-const schema = Hyperschema.from(SCHEMA_DIR)
+// Spaceschema definitions
+const schema = Spaceschema.from(SCHEMA_DIR)
 const example = schema.namespace('example')
 
 // Define 'members'
@@ -40,10 +40,10 @@ example.register({
     },
   ]
 })
-Hyperschema.toDisk(schema)
+Spaceschema.toDisk(schema)
 
-// Hyperdb collection definitions
-const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
+// Spacedb collection definitions
+const db = SpaceDB.from(SCHEMA_DIR, DB_DIR)
 const exampleDB = db.namespace('example')
 
 // Import helpers (see next step)
@@ -67,7 +67,7 @@ exampleDB.indexes.register({
   }
 })
 
-HyperDB.toDisk(db)
+SpaceDB.toDisk(db)
 ```
 
 Define helper functions in `helper.js`:
@@ -86,11 +86,11 @@ Then boot your db. You can use the same definition for a fully local db and a P2
 
 ``` js
 // run.mjs
-import HyperDB from 'hyperdb'
-import def from './spec/hyperdb/index.js'
+import SpaceDB from 'spacedb'
+import def from './spec/spacedb/index.js'
 
 // first choose your engine
-const db = HyperDB.rocks('./my-rocks.db', def)
+const db = SpaceDB.rocks('./my-rocks.db', def)
 
 // Add some entries
 await db.insert('@example/members', { name: 'maf', age: 37 })
@@ -106,22 +106,22 @@ It is that simple.
 
 ## API
 
-#### `db = Hyperdb.bee(hypercore, definition, [options])`
+#### `db = Spacedb.bee(spacecore, definition, [options])`
 
-Make a db backed by Hyperbee. P2P!
+Make a db backed by Spacebee. P2P!
 
 Available `options`:
 
 ```
 {
-  autoUpdate: false, // Whether the database should update when the underlying hyperbee does
+  autoUpdate: false, // Whether the database should update when the underlying spacebee does
   writable: true // Whether the database is writable
 }
 ```
 
-For Hyperbee backed databases, the database does not update it's state when the bee updates. Setting `autoUpdate` to `true` makes this automatic. Otherwise the database can be manually updated with `db.update()`.
+For Spacebee backed databases, the database does not update it's state when the bee updates. Setting `autoUpdate` to `true` makes this automatic. Otherwise the database can be manually updated with `db.update()`.
 
-#### `db = Hyperdb.rocks(path, definition, [options])`
+#### `db = Spacedb.rocks(path, definition, [options])`
 
 Make a db backed by RocksDB. Local only!
 
@@ -208,9 +208,9 @@ following properties:
 }
 ```
 
-`seq` is the sequence number for the underlying Hyperbee node.
+`seq` is the sequence number for the underlying Spacebee node.
 
-Only supported with Hyperbee engine.
+Only supported with Spacebee engine.
 
 #### `await db.flush()`
 
@@ -264,18 +264,18 @@ We can define what the schema of collections and the documents they contain usin
 The builder API can be imported via the `builder` subpath:
 
 ```js
-const HyperdbBuilder = require('hyperdb/builder')
+const SpacedbBuilder = require('spacedb/builder')
 ```
 
-#### `const db = HyperdbBuilder.from(SCHEMA_DIR, DB_DIR)`
+#### `const db = SpacedbBuilder.from(SCHEMA_DIR, DB_DIR)`
 
-Load a builder instance `db` with the `hyperschema` definitions (aka `SCHEMA_DIR`) and with existing `hyperdb` definitions (aka `DB_DIR`).
+Load a builder instance `db` with the `spaceschema` definitions (aka `SCHEMA_DIR`) and with existing `spacedb` definitions (aka `DB_DIR`).
 
-`SCHEMA_DIR` is either the `hyperschema` definition object or the directory path to load from disk.
+`SCHEMA_DIR` is either the `spaceschema` definition object or the directory path to load from disk.
 
 `DB_DIR` is either the existing database definition as a object or the directory path to load from disk.
 
-#### `HyperdbBuilder.toDisk(db, DB_DIR, opts = { esm: false })`
+#### `SpacedbBuilder.toDisk(db, DB_DIR, opts = { esm: false })`
 
 Persist the builder instance `db` to the path passed as `DB_DIR`. If `DB_DIR` is falsy, the builder will use the `db.dbDir` path from `db`. This method is usually called at the end of the `build.js` script.
 
@@ -310,7 +310,7 @@ A `description` has the following form:
 Elements in the `key` array should go from least to most specific, but often contain only one field that uniquely identifies the collection entry. Keys can use a 'dot notation' to specify nested properties of the collection entry's struct, for example:
 
 ```js
-// Hyperschema
+// Spaceschema
 const dbSchema = schema.namespace('db')
 dbSchema.register({
   name: 'foo',
@@ -325,8 +325,8 @@ dbSchema.register({
   ]
 })
 
-// Hyperdb Builder
-const db = HyperdbBuilder.from(SCHEMA_DIR, DB_DIR)
+// Spacedb Builder
+const db = SpacedbBuilder.from(SCHEMA_DIR, DB_DIR)
 db.collections.register({
   name: 'nested-foo',
   schema: '@db/nested',
@@ -341,7 +341,7 @@ async function triggerCallback (db, query, record) {}
 ```
 
 Trigger callback arguments:
-- `db` is the `hyperdb` instance.
+- `db` is the `spacedb` instance.
 - `query` is the query being used to update the database. In the case of `db.insert()` the `query` is the document being inserted.
 - `record` is the document being inserted, if `null` the document matching `query` is being deleted.
 
@@ -389,7 +389,7 @@ Indexes support defining `key` as an array of fields just like Collections, but 
 function keyMap (record, context): Array<any> {}
 ```
 
-The return type of the mapping callback is always an array but the type of the elements in that array are defined as a `hyperschema` type with the `type` property like so:
+The return type of the mapping callback is always an array but the type of the elements in that array are defined as a `spaceschema` type with the `type` property like so:
 
 ```js
 // helpers.js

@@ -1,11 +1,11 @@
-const HyperDB = require('../../../builder')
-const Hyperschema = require('hyperschema')
+const SpaceDB = require('../../../builder')
+const Spaceschema = require('spaceschema')
 const path = require('path')
 
-const SCHEMA_DIR = path.join(__dirname, '../generated/4/hyperschema')
-const DB_DIR = path.join(__dirname, '../generated/4/hyperdb')
+const SCHEMA_DIR = path.join(__dirname, '../generated/4/spaceschema')
+const DB_DIR = path.join(__dirname, '../generated/4/spacedb')
 
-const schema = Hyperschema.from(SCHEMA_DIR)
+const schema = Spaceschema.from(SCHEMA_DIR)
 
 const dbSchema = schema.namespace('db')
 
@@ -40,9 +40,9 @@ dbSchema.register({
   ]
 })
 
-Hyperschema.toDisk(schema)
+Spaceschema.toDisk(schema)
 
-const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
+const db = SpaceDB.from(SCHEMA_DIR, DB_DIR)
 const testDb = db.namespace('db')
 
 testDb.collections.register({
@@ -51,4 +51,4 @@ testDb.collections.register({
   key: ['member.id']
 })
 
-HyperDB.toDisk(db)
+SpaceDB.toDisk(db)

@@ -1,10 +1,10 @@
-const Hyperschema = require('hyperschema')
-const HyperDB = require('../')
+const Spaceschema = require('spaceschema')
+const SpaceDB = require('../')
 
-const SCHEMA_DIR = './spec/hyperschema'
-const DB_DIR = './spec/hyperdb'
+const SCHEMA_DIR = './spec/spaceschema'
+const DB_DIR = './spec/spacedb'
 
-const schema = Hyperschema.from(SCHEMA_DIR)
+const schema = Spaceschema.from(SCHEMA_DIR)
 const example = schema.namespace('example')
 
 example.register({
@@ -94,9 +94,9 @@ example.register({
   ]
 })
 
-Hyperschema.toDisk(schema)
+Spaceschema.toDisk(schema)
 
-const db = HyperDB.from(SCHEMA_DIR, DB_DIR)
+const db = SpaceDB.from(SCHEMA_DIR, DB_DIR)
 const exampleDb = db.namespace('example')
 
 exampleDb.require('./helpers.js')
@@ -153,4 +153,4 @@ exampleDb.indexes.register({
   key: ['name', 'tags']
 })
 
-HyperDB.toDisk(db)
+SpaceDB.toDisk(db)

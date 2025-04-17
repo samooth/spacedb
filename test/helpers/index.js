@@ -1,10 +1,10 @@
 const brittle = require('brittle')
 const tmp = require('test-tmp')
 const path = require('path')
-const Hyperschema = require('hyperschema')
-const Hypercore = require('hypercore')
+const Spaceschema = require('spaceschema')
+const Spacecore = require('bitspacecore')
 const Builder = require('../../builder')
-const HyperDB = require('../../')
+const SpaceDB = require('../../')
 
 const rocksTest = createTester('rocks')
 const beeTest = createTester('bee')
@@ -30,8 +30,8 @@ function test (name, fn) {
 
 function createTester (type) {
   const make = type === 'rocks'
-    ? (dir, def, opts = {}) => HyperDB.rocks(dir, def, opts)
-    : (dir, def, opts = {}) => HyperDB.bee(new Hypercore(dir, opts.key), def, opts)
+    ? (dir, def, opts = {}) => SpaceDB.rocks(dir, def, opts)
+    : (dir, def, opts = {}) => SpaceDB.bee(new Spacecore(dir, opts.key), def, opts)
 
   const test = runner(brittle)
 
@@ -54,13 +54,13 @@ function createTester (type) {
   }
 }
 
-function creator (t, createHyperDB) {
+function creator (t, createSpaceDB) {
   return async function fromDefinition (def, opts = {}) {
-    if (!HyperDB.isDefinition(def)) {
-      return fromDefinition(require(`../fixtures/generated/${(def && def.fixture) || 1}/hyperdb`), def)
+    if (!SpaceDB.isDefinition(def)) {
+      return fromDefinition(require(`../fixtures/generated/${(def && def.fixture) || 1}/spacedb`), def)
     }
 
-    const db = createHyperDB(opts.storage || await tmp(t), def, opts)
+    const db = createSpaceDB(opts.storage || await tmp(t), def, opts)
     const engine = db.engine
 
     // just to help catch leaks
@@ -75,8 +75,8 @@ function creator (t, createHyperDB) {
 function builder (t, create) {
   return async function (builder) {
     const dir = await tmp(t, { dir: path.join(__dirname, '../fixtures/tmp') })
-    await builder(Builder, Hyperschema, { db: path.join(dir, 'hyperdb'), schema: path.join(dir, 'hyperschema'), helpers: path.join(__dirname, 'helpers.js') })
-    return create(path.join(dir, 'db'), require(path.join(dir, 'hyperdb')))
+    await builder(Builder, Spaceschema, { db: path.join(dir, 'spacedb'), schema: path.join(dir, 'spaceschema'), helpers: path.join(__dirname, 'helpers.js') })
+    return create(path.join(dir, 'db'), require(path.join(dir, 'spacedb')))
   }
 }
 

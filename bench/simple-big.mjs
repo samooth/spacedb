@@ -1,7 +1,7 @@
-import HyperDB from '../index.js'
-import def from '../test/fixtures/generated/1/hyperdb/index.js'
+import SpaceDB from '../index.js'
+import def from '../test/fixtures/generated/1/spacedb/index.js'
 
-const db = HyperDB.rocks('./test.db', def)
+const db = SpaceDB.rocks('./test.db', def)
 
 console.time('boot')
 const oldest = await db.findOne('@db/members-by-age', { reverse: true })

@@ -217,7 +217,7 @@ class Updates {
   }
 }
 
-class HyperDB {
+class SpaceDB {
   constructor (engine, definition, {
     version = definition.version,
     snapshot = engine.snapshot(),
@@ -245,14 +245,14 @@ class HyperDB {
 
   static rocks (storage, definition, options = {}) {
     const readOnly = options.readOnly === true || options.readonly === true
-    return new HyperDB(new RocksEngine(storage, { readOnly }), definition, options)
+    return new SpaceDB(new RocksEngine(storage, { readOnly }), definition, options)
   }
 
   static bee (core, definition, options = {}) {
     const extension = options.extension
     const autoUpdate = !!options.autoUpdate
 
-    const db = new HyperDB(new BeeEngine(core, { extension }), definition, options)
+    const db = new SpaceDB(new BeeEngine(core, { extension }), definition, options)
 
     if (autoUpdate) {
       const update = db.update.bind(db)
@@ -336,7 +336,7 @@ class HyperDB {
   _createSnapshot (rootInstance, writable, context) {
     const snapshot = this.engineSnapshot.ref()
 
-    return new HyperDB(this.engine, this.definition, {
+    return new SpaceDB(this.engine, this.definition, {
       version: this.version,
       snapshot,
       updates: this.updates.ref(),
@@ -601,7 +601,7 @@ class HyperDB {
 }
 
 function maybeClosed (db) {
-  if (db.closing !== null) throw new Error('Hyperdb is closed')
+  if (db.closing !== null) throw new Error('Spacedb is closed')
 }
 
 function withinRange (range, key) {
@@ -692,4 +692,4 @@ function sortOverlay (overlay, reverse) {
   return overlay
 }
 
-module.exports = HyperDB
+module.exports = SpaceDB
