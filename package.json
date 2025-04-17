@@ -1,6 +1,6 @@
 {
   "name": "p2p-spacedb",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "P2P Indexable Database",
   "files": [
     "index.js",
