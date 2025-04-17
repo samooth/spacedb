@@ -36,22 +36,18 @@ const encoding1_0 = c.frame(encoding0)
 // @db/nested
 const encoding1 = {
   preencode (state, m) {
-    let flags = 0
-    if (m.fun) flags |= 1
-
     encoding1_0.preencode(state, m.member)
-    c.uint.preencode(state, flags)
+    state.end++ // max flag is 1 so always one byte
   },
   encode (state, m) {
-    let flags = 0
-    if (m.fun) flags |= 1
+    const flags = m.fun ? 1 : 0
 
     encoding1_0.encode(state, m.member)
     c.uint.encode(state, flags)
   },
   decode (state) {
     const r0 = encoding1_0.decode(state)
-    const flags = state.start < state.end ? c.uint.decode(state) : 0
+    const flags = c.uint.decode(state)
 
     return {
       member: r0,
@@ -74,6 +70,12 @@ function decode (name, buffer, v = VERSION) {
   return c.decode(getEncoding(name), buffer)
 }
 
+function getEnum (name) {
+  switch (name) {
+    default: throw new Error('Enum not found ' + name)
+  }
+}
+
 function getEncoding (name) {
   switch (name) {
     case '@db/member': return encoding0
@@ -82,7 +84,7 @@ function getEncoding (name) {
   }
 }
 
-function resolveStruct (name, v = VERSION) {
+function getStruct (name, v = VERSION) {
   const enc = getEncoding(name)
   return {
     preencode (state, m) {
@@ -100,4 +102,6 @@ function resolveStruct (name, v = VERSION) {
   }
 }
 
-module.exports = { resolveStruct, getEncoding, encode, decode, setVersion, version }
+const resolveStruct = getStruct // compat
+
+module.exports = { resolveStruct, getStruct, getEnum, getEncoding, encode, decode, setVersion, version }

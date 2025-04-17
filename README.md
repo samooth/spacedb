@@ -3,7 +3,7 @@
 Database built for P2P and local indexing
 
 ```
-npm install spacedb
+npm install p2p-spacedb
 ```
 
 ## Usage

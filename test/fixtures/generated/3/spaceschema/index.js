@@ -48,6 +48,12 @@ function decode (name, buffer, v = VERSION) {
   return c.decode(getEncoding(name), buffer)
 }
 
+function getEnum (name) {
+  switch (name) {
+    default: throw new Error('Enum not found ' + name)
+  }
+}
+
 function getEncoding (name) {
   switch (name) {
     case '@db/member': return encoding0
@@ -55,7 +61,7 @@ function getEncoding (name) {
   }
 }
 
-function resolveStruct (name, v = VERSION) {
+function getStruct (name, v = VERSION) {
   const enc = getEncoding(name)
   return {
     preencode (state, m) {
@@ -73,4 +79,6 @@ function resolveStruct (name, v = VERSION) {
   }
 }
 
-module.exports = { resolveStruct, getEncoding, encode, decode, setVersion, version }
+const resolveStruct = getStruct // compat
+
+module.exports = { resolveStruct, getStruct, getEnum, getEncoding, encode, decode, setVersion, version }
